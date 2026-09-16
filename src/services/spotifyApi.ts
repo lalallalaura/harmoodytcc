@@ -80,7 +80,6 @@ async function spotifyFetch(
       const body = await response.clone().json();
       detail = body?.error?.message ?? "";
     } catch {
-      // resposta sem corpo JSON, ignora
     }
     throw new SpotifyApiError(
       "spotify-error",

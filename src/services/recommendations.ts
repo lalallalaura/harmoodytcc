@@ -2,6 +2,7 @@ import { moods, songs } from "../data";
 import { MoodId, Song } from "../types";
 import { isSpotifyConnected } from "./spotifyAuth";
 import { recommendSongsFromSpotify } from "./spotifyRecommendations";
+import { getArtistFeedbackScore, getFeedback } from "./feedback";
 
 function distance(a: number, b: number) {
   return Math.abs(a - b);
@@ -9,6 +10,12 @@ function distance(a: number, b: number) {
 
 function recommendFromLocalData(moodId: MoodId): { songs: Song[]; score: number } {
   const mood = moods.find((item) => item.id === moodId)!;
+
+  // Sem Spotify não temos top tracks nem gêneros reais, então o único
+  // sinal de gosto pessoal disponível aqui é o feedback ❤️/👎 já dado
+  // pelo próprio usuário nesta tela (por artista, já que as músicas
+  // locais não têm gênero cadastrado).
+  const hasFeedback = getFeedback().length > 0;
 
   const ranked = songs
     .map((song) => {
@@ -18,7 +25,12 @@ function recommendFromLocalData(moodId: MoodId): { songs: Song[]; score: number 
       const bpmTarget =
         moodId === "energized" ? 120 : moodId === "calm" ? 80 : moodId === "romantic" ? 95 : 100;
       const bpmFit = 1 - Math.min(distance(song.bpm, bpmTarget) / 100, 1);
-      const score = moodBonus + energyFit * 0.3 + valenceFit * 0.25 + bpmFit * 0.1;
+      const moodScore = moodBonus + energyFit * 0.3 + valenceFit * 0.25 + bpmFit * 0.1;
+
+      const feedbackScore = getArtistFeedbackScore(song.artist); // -3..3
+      const tasteScore = Math.max(0, Math.min(1, 0.5 + feedbackScore * 0.15));
+      const score = hasFeedback ? moodScore * 0.7 + tasteScore * 0.3 : moodScore;
+
       return { song, score };
     })
     .sort((a, b) => b.score - a.score)

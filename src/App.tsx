@@ -211,7 +211,7 @@ export default function App() {
                   </div>
 
                   {result.songs.map((song) => (
-                    <SongCard key={song.id} song={song} />
+                    <SongCard key={song.id} song={song} moodId={currentMood.id} />
                   ))}
 
                   {result.source === "spotify" && (

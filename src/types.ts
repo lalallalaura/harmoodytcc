@@ -20,6 +20,8 @@ export interface Song {
   cover: string;
   spotifyUrl?: string | null;
   estimated?: boolean;
+  /** Gêneros do artista (quando disponíveis via Spotify), usados para o gosto pessoal. */
+  genres?: string[];
 }
 
 export interface SpotifyTrack {
