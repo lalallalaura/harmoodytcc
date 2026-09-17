@@ -112,7 +112,6 @@ export default function App() {
         {activeTab === "home" && (
           <>
             <section className="hero">
-              <div className="sparkle"><Sparkles size={18} /></div>
               <div>
                 <span className="eyebrow">Sua experiência de hoje</span>
                 <h1>Como você quer ficar hoje?</h1>
