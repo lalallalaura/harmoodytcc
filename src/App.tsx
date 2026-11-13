@@ -1,12 +1,27 @@
+
 import { useEffect, useState } from "react";
-import { Sparkles, RotateCcw, Loader2, ListMusic, CheckCircle2, RefreshCw } from "lucide-react";
+import {
+  Sparkles,
+  RotateCcw,
+  Loader2,
+  ListMusic,
+  CheckCircle2,
+  RefreshCw,
+  Music2,
+  ArrowDown,
+  Disc3,
+} from "lucide-react";
+
 import { MoodSelector } from "./components/MoodSelector";
 import { SongCard } from "./components/SongCard";
 import { ScoreCard } from "./components/ScoreCard";
 import { BottomNav } from "./components/BottomNav";
 import { SpotifyConnect } from "./components/SpotifyConnect";
 import { moods } from "./data";
-import { recommendSongs, RecommendationResult } from "./services/recommendations";
+import {
+  recommendSongs,
+  RecommendationResult,
+} from "./services/recommendations";
 import { createPlaylistFromRecommendations } from "./services/spotifyPlaylist";
 import { getHistory, HistoryItem, saveHistory } from "./services/history";
 import { MoodId } from "./types";
@@ -26,7 +41,9 @@ export default function App() {
   const [moreLoading, setMoreLoading] = useState(false);
   const [shownIds, setShownIds] = useState<string[]>([]);
   const [playlistSize, setPlaylistSize] = useState(12);
-  const [playlistState, setPlaylistState] = useState<PlaylistState>({ status: "idle" });
+  const [playlistState, setPlaylistState] = useState<PlaylistState>({
+    status: "idle",
+  });
 
   useEffect(() => {
     if (!selectedMood) {
@@ -44,6 +61,7 @@ export default function App() {
       if (!cancelled) {
         setResult(data);
         setLoading(false);
+
         if (data.source === "spotify") {
           setShownIds(data.songs.map((s) => s.id));
         }
@@ -71,13 +89,22 @@ export default function App() {
 
   async function handleShowMore() {
     if (!selectedMood || moreLoading) return;
+
     setMoreLoading(true);
+
     try {
-      const data = await recommendSongs(selectedMood, { excludeIds: shownIds });
+      const data = await recommendSongs(selectedMood, {
+        excludeIds: shownIds,
+      });
+
       setResult(data);
       setPlaylistState({ status: "idle" });
+
       if (data.source === "spotify") {
-        setShownIds((prev) => [...prev, ...data.songs.map((s) => s.id)]);
+        setShownIds((prev) => [
+          ...prev,
+          ...data.songs.map((s) => s.id),
+        ]);
       }
     } finally {
       setMoreLoading(false);
@@ -86,14 +113,23 @@ export default function App() {
 
   async function handleCreatePlaylist() {
     if (!result || !currentMood || result.source !== "spotify") return;
+
     setPlaylistState({ status: "saving" });
+
     try {
-      const created = await createPlaylistFromRecommendations(currentMood, result.songs, playlistSize);
+      const created = await createPlaylistFromRecommendations(
+        currentMood,
+        result.songs,
+        playlistSize
+      );
+
       setPlaylistState({ status: "done", url: created.url });
     } catch (err: any) {
       setPlaylistState({
         status: "error",
-        message: err?.message ?? "Não foi possível criar a playlist no Spotify agora.",
+        message:
+          err?.message ??
+          "Não foi possível criar a playlist no Spotify agora.",
       });
     }
   }
@@ -101,64 +137,199 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
-          <span className="brand">HARMOODY</span>
+        <div className="topbar-brand">
+          <span className="brand">HARMOODY<span className="brand-period">.</span></span>
           <p>música para o que você quer sentir</p>
         </div>
-        <div className="brand-mark">♪</div>
+
+        <div className="brand-mark">
+          <Music2 size={23} strokeWidth={1.8} />
+        </div>
       </header>
 
       <main className="content">
         {activeTab === "home" && (
-          <>
-            <section className="hero">
-              <div>
-                <span className="eyebrow">Sua experiência de hoje</span>
-                <h1>Como você quer ficar hoje?</h1>
-                <p>Escolha um clima. O Harmoody encontra músicas que combinam com ele.</p>
+          <div className="home-page">
+
+            {/* APRESENTAÇÃO */}
+
+            <section className="home-hero">
+              <div className="hero-topline">
+                <span className="hero-index">01 / YOUR FEELING STUDIO</span>
+                <span className="hero-status">
+                  <span className="status-dot" />
+                  FEITO PARA VOCÊ
+                </span>
+              </div>
+
+              <div className="hero-main">
+                <div className="hero-copy">
+                  <span className="eyebrow hero-eyebrow">
+                    MÚSICA · EMOÇÃO · CONEXÃO
+                  </span>
+
+                  <h1>
+                    A vida tem
+                    <br />
+                    <span>uma trilha</span>
+                    <br />
+                    sonora.
+                  </h1>
+
+                  <p className="hero-description">
+                    Nem sempre sabemos o que ouvir.
+                    Mas sabemos como queremos nos sentir.
+                    <strong> Comece por aí.</strong>
+                  </p>
+
+                  <a className="hero-scroll" href="#mood-selection">
+                    <span>ENCONTRE SEU CLIMA</span>
+                    <ArrowDown size={15} />
+                  </a>
+                </div>
+
+                <div className="hero-art" aria-hidden="true">
+                  <div className="art-circle art-circle-one" />
+                  <div className="art-circle art-circle-two" />
+                  <div className="art-disc">
+                    <div className="disc-center">
+                      <Music2 size={27} />
+                    </div>
+                  </div>
+                  <span className="art-star star-one">✳</span>
+                  <span className="art-star star-two">✳</span>
+                  <span className="art-note">♫</span>
+                  <span className="art-caption">SOUNDTRACK<br />OF YOURSELF</span>
+                </div>
+              </div>
+
+              <div className="hero-bottomline">
+                <span>ENCONTRE O SOM DO SEU MOMENTO</span>
+                <span>EST. 2026 · HARMOODY</span>
               </div>
             </section>
 
-            <MoodSelector selected={selectedMood} onSelect={chooseMood} />
+            {/* SELEÇÃO DE HUMOR */}
+
+            <section className="mood-selection" id="mood-selection">
+              <div className="section-kicker">
+                <span>02</span>
+                <span>ESCOLHA SUA DIREÇÃO</span>
+              </div>
+
+              <div className="mood-intro">
+                <div>
+                  <span className="eyebrow">UM POUCO SOBRE VOCÊ</span>
+                  <h2>
+                    Como você quer
+                    <br />
+                    <span>ficar hoje?</span>
+                  </h2>
+                </div>
+
+                <span className="mood-side-note">
+                  NÃO EXISTE JEITO
+                  <br />
+                  CERTO DE SENTIR.
+                </span>
+              </div>
+
+              <p className="mood-description">
+                Escolha o sentimento que deseja alcançar.
+                A gente encontra músicas para acompanhar esse caminho.
+              </p>
+
+              <div className="mood-selector-wrap">
+                <MoodSelector
+                  selected={selectedMood}
+                  onSelect={chooseMood}
+                />
+              </div>
+
+              <div className="selection-footnote">
+                <Sparkles size={14} />
+                <span>SEU PRÓXIMO MOMENTO COMEÇA AQUI</span>
+              </div>
+            </section>
+
+            {/* CARREGAMENTO */}
 
             {loading && (
               <div className="empty-state">
-                <div className="empty-icon"><Loader2 size={22} className="spin" /></div>
-                <h3>Buscando suas músicas...</h3>
-                <p>Estamos consultando o Spotify para montar seu mix.</p>
+                <div className="empty-icon">
+                  <Loader2 size={22} className="spin" />
+                </div>
+                <h3>Preparando sua trilha...</h3>
+                <p>
+                  Estamos procurando músicas que combinem com o
+                  sentimento que você escolheu.
+                </p>
               </div>
             )}
 
+            {/* RESULTADOS */}
+
             {!loading && result && currentMood && (
-              <>
+              <section className="recommendation-area">
+                <div className="section-kicker">
+                  <span>03</span>
+                  <span>SUA DESCOBERTA MUSICAL</span>
+                </div>
+
                 <section className="result-heading">
                   <div>
-                    <span className="eyebrow">Seu clima</span>
-                    <h2>{currentMood.emoji} {currentMood.label}</h2>
+                    <span className="eyebrow">SEU CLIMA ESCOLHIDO</span>
+                    <h2>
+                      {currentMood.emoji} {currentMood.label}
+                    </h2>
                   </div>
+
                   <button className="reset-button" onClick={reset}>
-                    <RotateCcw size={16} /> Trocar
+                    <RotateCcw size={15} />
+                    Trocar
                   </button>
                 </section>
 
                 <ScoreCard score={result.score} />
 
                 {result.notice && (
-                  <p className="spotify-error" style={{ marginTop: 12 }}>{result.notice}</p>
+                  <p className="spotify-error" style={{ marginTop: 12 }}>
+                    {result.notice}
+                  </p>
                 )}
 
                 {result.source === "spotify" && (
                   <div className="spotify-actions" style={{ marginTop: 14 }}>
                     {playlistState.status !== "done" && (
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%" }}>
-                        <span style={{ fontSize: 12, color: "var(--muted)" }}>Tamanho da playlist:</span>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "center",
+                          width: "100%",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "var(--muted)",
+                          }}
+                        >
+                          Tamanho da playlist:
+                        </span>
+
                         {[12, 24, 36].map((size) => (
                           <button
                             key={size}
                             className="spotify-secondary-button"
                             style={
                               playlistSize === size
-                                ? { background: "var(--purple)", color: "white", borderColor: "var(--purple)" }
+                                ? {
+                                    background: "var(--purple)",
+                                    color: "white",
+                                    borderColor: "var(--purple)",
+                                  }
                                 : undefined
                             }
                             onClick={() => setPlaylistSize(size)}
@@ -172,11 +343,16 @@ export default function App() {
 
                     {playlistState.status === "done" ? (
                       <span className="spotify-status connected">
-                        <CheckCircle2 size={14} /> Playlist criada no Spotify
+                        <CheckCircle2 size={14} />
+                        Playlist criada no Spotify
                         {playlistState.url && (
                           <>
                             {" · "}
-                            <a href={playlistState.url} target="_blank" rel="noopener noreferrer">
+                            <a
+                              href={playlistState.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
                               abrir
                             </a>
                           </>
@@ -189,13 +365,20 @@ export default function App() {
                         disabled={playlistState.status === "saving"}
                       >
                         <ListMusic size={16} />
+
                         {playlistState.status === "saving"
                           ? "Criando playlist..."
                           : `Salvar ${playlistSize} músicas como playlist no Spotify`}
                       </button>
                     )}
+
                     {playlistState.status === "error" && (
-                      <p className="spotify-error" style={{ width: "100%" }}>{playlistState.message}</p>
+                      <p
+                        className="spotify-error"
+                        style={{ width: "100%" }}
+                      >
+                        {playlistState.message}
+                      </p>
                     )}
                   </div>
                 )}
@@ -203,20 +386,28 @@ export default function App() {
                 <section className="songs-section">
                   <div className="section-title">
                     <div>
-                      <span className="eyebrow">Recomendadas para você</span>
+                      <span className="eyebrow">
+                        SELEÇÃO ESPECIALMENTE PARA VOCÊ
+                      </span>
                       <h2>Seu mix emocional</h2>
                     </div>
-                    <span className="song-count">{result.songs.length} faixas</span>
+
+                    <span className="song-count">
+                      {result.songs.length} faixas
+                    </span>
                   </div>
 
                   {result.songs.map((song) => (
-                    <SongCard key={song.id} song={song} moodId={currentMood.id} />
+                    <SongCard
+                      key={song.id}
+                      song={song}
+                      moodId={currentMood.id}
+                    />
                   ))}
 
                   {result.source === "spotify" && (
                     <button
-                      className="reset-button"
-                      style={{ width: "100%", justifyContent: "center", marginTop: 14 }}
+                      className="reset-button discover-more"
                       onClick={handleShowMore}
                       disabled={moreLoading}
                     >
@@ -225,46 +416,82 @@ export default function App() {
                       ) : (
                         <RefreshCw size={16} />
                       )}
-                      {moreLoading ? "Buscando novas músicas..." : "✨ Descobrir novas músicas"}
+
+                      {moreLoading
+                        ? "Buscando novas músicas..."
+                        : "Descobrir novas músicas"}
                     </button>
                   )}
                 </section>
-              </>
+              </section>
             )}
 
+            {/* ESTADO INICIAL */}
+
             {!loading && !result && (
-              <div className="empty-state">
-                <div className="empty-icon">♪</div>
-                <h3>Vamos começar?</h3>
-                <p>Escolha uma das quatro opções acima e o Harmoody monta sua experiência musical.</p>
-              </div>
+              <section className="home-note">
+                <div className="home-note-icon">
+                  <Disc3 size={24} />
+                </div>
+
+                <div>
+                  <span className="eyebrow">UM CONVITE</span>
+                  <h3>Deixe a música encontrar você.</h3>
+                  <p>
+                    Escolha um dos quatro climas e descubra uma seleção
+                    musical pensada para o que você deseja sentir.
+                  </p>
+                </div>
+
+                <span className="note-decoration">✳</span>
+              </section>
             )}
-          </>
+
+            <footer className="home-footer">
+              <span>HARMOODY © 2026</span>
+              <span>FEEL IT. FIND YOUR SOUND. ♡</span>
+            </footer>
+          </div>
         )}
+
+        {/* HISTÓRICO */}
 
         {activeTab === "history" && (
           <section>
             <div className="page-heading">
-              <span className="eyebrow">Suas escolhas</span>
+              <span className="eyebrow">SUAS ESCOLHAS</span>
               <h1>Histórico</h1>
               <p>Veja os climas que você escolheu recentemente.</p>
             </div>
+
             {history.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">♡</div>
                 <h3>Ainda não há histórico</h3>
-                <p>Escolha um clima na página inicial para começar.</p>
+                <p>
+                  Escolha um clima na página inicial para começar.
+                </p>
               </div>
             ) : (
               <div className="history-list">
                 {history.map((item) => {
                   const mood = moods.find((m) => m.id === item.mood)!;
+
                   return (
-                    <button key={item.id} className="history-item" onClick={() => chooseMood(item.mood)}>
+                    <button
+                      key={item.id}
+                      className="history-item"
+                      onClick={() => chooseMood(item.mood)}
+                    >
                       <span className="history-emoji">{mood.emoji}</span>
                       <div>
                         <strong>{mood.label}</strong>
-                        <span>{new Date(item.createdAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                        <span>
+                          {new Date(item.createdAt).toLocaleString("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </span>
                       </div>
                     </button>
                   );
@@ -274,18 +501,26 @@ export default function App() {
           </section>
         )}
 
+        {/* PERFIL */}
+
         {activeTab === "profile" && (
           <section>
             <div className="page-heading">
-              <span className="eyebrow">Harmoody</span>
+              <span className="eyebrow">HARMOODY</span>
               <h1>Perfil</h1>
-              <p>Uma experiência musical baseada em emoção, energia e valência.</p>
+              <p>
+                Uma experiência musical baseada em emoção, energia e valência.
+              </p>
             </div>
+
             <div className="about-card">
               <div className="about-logo">H</div>
               <div>
                 <h3>Seu bem-estar através da música</h3>
-                <p>O Harmoody cruza características musicais para encontrar faixas compatíveis com o clima que você deseja alcançar.</p>
+                <p>
+                  O Harmoody cruza características musicais para encontrar
+                  faixas compatíveis com o clima que você deseja alcançar.
+                </p>
               </div>
             </div>
 
