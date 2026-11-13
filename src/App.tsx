@@ -34,6 +34,8 @@ type PlaylistState =
 
 export default function App() {
   const [selectedMood, setSelectedMood] = useState<MoodId | null>(null);
+  const [selectedHistoryItem, setSelectedHistoryItem] =
+  useState<HistoryItem | null>(null);
   const [activeTab, setActiveTab] = useState("home");
   const [history, setHistory] = useState<HistoryItem[]>(getHistory());
   const [result, setResult] = useState<RecommendationResult | null>(null);
@@ -86,6 +88,9 @@ export default function App() {
   function reset() {
     setSelectedMood(null);
   }
+  function openHistoryItem(item: HistoryItem) {
+  setSelectedHistoryItem(item);
+}
 
   async function handleShowMore() {
     if (!selectedMood || moreLoading) return;
@@ -495,6 +500,57 @@ export default function App() {
         </div>
 
         <div className="history-mosaic">
+          {selectedHistoryItem && (
+  <div className="history-detail">
+    <button
+      onClick={() => setSelectedHistoryItem(null)}
+    >
+      Voltar ao histórico
+    </button>
+
+    {(() => {
+      const mood = moods.find(
+        (m) => m.id === selectedHistoryItem.mood
+      );
+
+      const date = new Date(selectedHistoryItem.createdAt);
+
+      if (!mood) return null;
+
+      return (
+        <div>
+          <span>REGISTRO MUSICAL</span>
+
+          <h2>{mood.label}</h2>
+
+          <p>
+            {date.toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+
+          <p>
+            {date.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+
+          <button
+            onClick={() => {
+              chooseMood(selectedHistoryItem.mood);
+              setSelectedHistoryItem(null);
+            }}
+          >
+            Explorar músicas deste clima
+          </button>
+        </div>
+      );
+    })()}
+  </div>
+)}
           {history.map((item, index) => {
             const mood = moods.find((m) => m.id === item.mood);
 
@@ -506,7 +562,7 @@ export default function App() {
               <button
                 key={item.id}
                 className={`history-card history-card-${index % 4}`}
-                onClick={() => chooseMood(item.mood)}
+                onClick={() => openHistoryItem(item)}
               >
                 <div className="history-card-top">
                   <span>NO. {String(index + 1).padStart(2, "0")}</span>
