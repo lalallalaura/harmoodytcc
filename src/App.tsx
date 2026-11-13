@@ -639,7 +639,7 @@ async function handleShowMore() {
               rel="noopener noreferrer"
               aria-label={`Abrir ${song.title} no Spotify`}
             >
-              ↗
+              𝄞
             </a>
           )}
         </div>
@@ -774,7 +774,7 @@ async function handleShowMore() {
                 </div>
 
                 <span className="history-card-open">
-                  ABRIR REGISTRO ↗
+                  ABRIR REGISTRO!
                 </span>
               </button>
             );
