@@ -1,10 +1,18 @@
+
 import { useState } from "react";
 import { Play, Heart, ThumbsDown } from "lucide-react";
 import { MoodId, Song } from "../types";
-import { FeedbackValue, getFeedbackForSong, removeFeedback, saveFeedback } from "../services/feedback";
+import {
+  FeedbackValue,
+  getFeedbackForSong,
+  removeFeedback,
+  saveFeedback,
+} from "../services/feedback";
 
 export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
-  const [feedback, setFeedback] = useState<FeedbackValue | null>(() => getFeedbackForSong(song.id));
+  const [feedback, setFeedback] = useState<FeedbackValue | null>(
+    () => getFeedbackForSong(song.id, moodId)
+  );
 
   function openInSpotify() {
     if (song.spotifyUrl) {
@@ -14,20 +22,24 @@ export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
 
   function handleFeedback(value: FeedbackValue) {
     const next = feedback === value ? null : value;
+
     setFeedback(next);
+
     if (next) {
       saveFeedback(song, moodId, next, song.genres);
     } else {
-      removeFeedback(song.id);
+      removeFeedback(song.id, moodId);
     }
   }
 
   return (
     <article className="song-card">
       <img src={song.cover} alt="" />
+
       <div className="song-info">
         <strong>{song.title}</strong>
         <span>{song.artist}</span>
+
         <div className="song-meta">
           <span>{song.estimated ? "~" : ""}{song.bpm} BPM</span>
           <span>Valência {Math.round(song.valence * 100)}%</span>
@@ -52,6 +64,7 @@ export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
         >
           <Heart size={14} fill={feedback === "like" ? "#ec4899" : "none"} />
         </button>
+
         <button
           type="button"
           title={feedback === "dislike" ? "Remover 'não gostei'" : "Não gostei"}
@@ -69,6 +82,7 @@ export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
         >
           <ThumbsDown size={14} fill={feedback === "dislike" ? "#a78bfa" : "none"} />
         </button>
+
         <button
           className="play-button"
           title={song.spotifyUrl ? "Ouvir no Spotify" : "Ouvir"}
