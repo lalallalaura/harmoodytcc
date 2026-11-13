@@ -1,3 +1,4 @@
+
 import { Home, History, UserRound } from "lucide-react";
 
 interface Props {
@@ -13,16 +14,20 @@ export function BottomNav({ active, onChange }: Props) {
   ];
 
   return (
-    <nav className="bottom-nav">
+    <nav className="bottom-nav" aria-label="Navegação principal">
       {tabs.map((tab) => {
         const Icon = tab.icon;
+        const isActive = active === tab.id;
+
         return (
           <button
             key={tab.id}
-            className={active === tab.id ? "active" : ""}
+            type="button"
+            className={isActive ? "active" : ""}
             onClick={() => onChange(tab.id)}
+            aria-current={isActive ? "page" : undefined}
           >
-            <Icon size={21} />
+            <Icon size={21} strokeWidth={isActive ? 2.2 : 1.7} />
             <span>{tab.label}</span>
           </button>
         );

@@ -633,26 +633,73 @@ h2 {
   background: rgba(139,92,246,.08);
 }
 
-/* BOTTOM NAV */
+
+/* BOTTOM NAV — INDIE MUSIC ZINE */
 
 .bottom-nav {
-  background: rgba(12,9,21,.88);
-  border-top: 1px solid rgba(196,181,253,.12);
-  box-shadow: 0 -10px 35px rgba(0,0,0,.22);
+  background: rgba(19, 13, 25, .94);
+  border: 1px solid rgba(197, 169, 232, .16);
+  border-radius: 20px;
+  box-shadow: 0 -8px 35px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .bottom-nav button {
-  transition: color .2s ease, transform .2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #9D91A5;
+  transition: color .25s ease, transform .25s ease;
+}
+
+.bottom-nav button span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .3px;
+  transition: color .25s ease;
+}
+
+.bottom-nav button svg {
+  transition: transform .25s ease, color .25s ease;
 }
 
 .bottom-nav button.active {
-  color: #c4b5fd;
+  color: #ED9FC5;
   transform: translateY(-2px);
 }
 
+.bottom-nav button.active svg {
+  color: #ED9FC5;
+  transform: scale(1.08);
+}
+
 .bottom-nav button.active span {
+  color: #ED9FC5;
   font-weight: 700;
 }
+
+/* MODO CLARO */
+
+.app-shell[data-theme="light"] .bottom-nav {
+  background: rgba(255, 251, 255, .96);
+  border-color: #E8DCEC;
+  box-shadow: 0 -8px 30px rgba(80, 55, 90, .09);
+}
+
+.app-shell[data-theme="light"] .bottom-nav button {
+  color: #9B8BA2;
+}
+
+.app-shell[data-theme="light"] .bottom-nav button.active,
+.app-shell[data-theme="light"] .bottom-nav button.active svg,
+.app-shell[data-theme="light"] .bottom-nav button.active span {
+  color: #A47799;
+}
+
 
 /* TRANSITIONS */
 
