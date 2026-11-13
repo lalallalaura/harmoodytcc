@@ -502,34 +502,73 @@ export default function App() {
         )}
 
         {/* PERFIL */}
+{/* PERFIL */}
 
-        {activeTab === "profile" && (
-          <section>
-            <div className="page-heading">
-              <span className="eyebrow">HARMOODY</span>
-              <h1>Perfil</h1>
-              <p>
-                Uma experiência musical baseada em emoção, energia e valência.
-              </p>
-            </div>
+{activeTab === "profile" && (
+  <section className="profile-page">
 
-            <div className="about-card">
-              <div className="about-logo">H</div>
-              <div>
-                <h3>Seu bem-estar através da música</h3>
-                <p>
-                  O Harmoody cruza características musicais para encontrar
-                  faixas compatíveis com o clima que você deseja alcançar.
-                </p>
-              </div>
-            </div>
+    <div className="profile-heading">
+      <span className="profile-kicker">
+        HARMOODY / SEU ESPAÇO
+      </span>
 
-            <SpotifyConnect />
-          </section>
-        )}
-      </main>
+      <h1>
+        Música que
+        <br />
+        <em>conversa com você.</em>
+      </h1>
 
-      <BottomNav active={activeTab} onChange={setActiveTab} />
+      <p>
+        Descubra como a música pode acompanhar seus sentimentos,
+        respeitar seu momento e ajudar você a encontrar novas sensações.
+      </p>
     </div>
-  );
-}
+
+    <div className="profile-about">
+      <div className="profile-about-top">
+        <span>01 / SOBRE O PROJETO</span>
+        <span>HARMOODY</span>
+      </div>
+
+      <div className="profile-about-content">
+        <span className="profile-letter">H.</span>
+
+        <div>
+          <h2>Seu bem-estar através da música.</h2>
+
+          <p>
+            O Harmoody cruza características musicais, como energia,
+            andamento e valência das letras, para encontrar faixas
+            compatíveis com o clima que você deseja alcançar.
+          </p>
+        </div>
+      </div>
+
+      <div className="profile-about-footer">
+        <span>EMOÇÃO</span>
+        <span>ENERGIA</span>
+        <span>MÚSICA</span>
+      </div>
+    </div>
+
+    <div className="profile-spotify">
+      <div className="profile-section-heading">
+        <span>02 / SUA CONEXÃO</span>
+
+        <h2>Seu universo musical.</h2>
+
+        <p>
+          Conecte sua conta para descobrir recomendações musicais.
+        </p>
+      </div>
+
+      <SpotifyConnect />
+    </div>
+
+    <footer className="profile-footer">
+      <span>HARMOODY © 2026</span>
+      <span>MÚSICA PARA O QUE VOCÊ QUER SENTIR</span>
+    </footer>
+
+  </section>
+)}
