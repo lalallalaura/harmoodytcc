@@ -30,6 +30,7 @@ export interface SpotifyTrack {
   artist: string;
   artistIds: string[];
   album: string;
+  popularity: number;
   cover: string;
   durationMs: number;
   previewUrl: string | null;

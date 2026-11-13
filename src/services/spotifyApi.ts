@@ -100,6 +100,7 @@ function mapTrack(raw: any): SpotifyTrack {
     artist: (raw.artists ?? []).map((a: any) => a.name).join(", "),
     album: raw.album?.name ?? "",
     cover: raw.album?.images?.[0]?.url ?? "",
+    popularity: raw.popularity ?? 0,
     durationMs: raw.duration_ms ?? 0,
     previewUrl: raw.preview_url ?? null,
     spotifyUrl: raw.external_urls?.spotify ?? null,
