@@ -1,3 +1,4 @@
+
 import { moods } from "../data";
 import { MoodId } from "../types";
 
@@ -8,16 +9,27 @@ interface Props {
 
 export function MoodSelector({ selected, onSelect }: Props) {
   return (
-    <div className="mood-grid">
-      {moods.map((mood) => (
+    <div className="mood-editorial-list">
+      {moods.map((mood, index) => (
         <button
           key={mood.id}
-          className={`mood-card ${selected === mood.id ? "selected" : ""}`}
+          type="button"
+          className={`mood-editorial-item ${
+            selected === mood.id ? "selected" : ""
+          }`}
           onClick={() => onSelect(mood.id)}
+          aria-pressed={selected === mood.id}
         >
-          <span className="mood-emoji">{mood.emoji}</span>
-          <strong>{mood.label}</strong>
-          <small>{mood.description}</small>
+          <span className="mood-number">
+            0{index + 1}
+          </span>
+
+          <span className="mood-information">
+            <strong>{mood.label}</strong>
+            <small>{mood.description}</small>
+          </span>
+
+          <span className="mood-arrow">↗</span>
         </button>
       ))}
     </div>
