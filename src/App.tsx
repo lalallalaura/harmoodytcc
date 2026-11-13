@@ -461,15 +461,18 @@ export default function App() {
         {/* HISTÓRICO */}
 
         
-{/* HISTÓRICO */}
 
 {activeTab === "history" && (
   <section className="history-page">
 
     <header className="history-intro">
       <div className="history-heading">
-        <span className="eyebrow">HARMOODY / SEU ARQUIVO PESSOAL</span>
+        <span className="eyebrow">
+          HARMOODY / SEU ARQUIVO PESSOAL
+        </span>
+
         <h1>Fragmentos <em>de você.</em></h1>
+
         <p>
           Cada escolha guarda um pouco do que você sentiu
           e daquilo que quis encontrar na música.
@@ -482,7 +485,62 @@ export default function App() {
       </div>
     </header>
 
-    {history.length === 0 ? (
+    {selectedHistoryItem ? (
+      <div className="history-detail">
+
+        <button
+          type="button"
+          onClick={() => setSelectedHistoryItem(null)}
+        >
+          Voltar ao histórico
+        </button>
+
+        {(() => {
+          const mood = moods.find(
+            (m) => m.id === selectedHistoryItem.mood
+          );
+
+          const date = new Date(selectedHistoryItem.createdAt);
+
+          if (!mood) return null;
+
+          return (
+            <div>
+              <span>REGISTRO MUSICAL</span>
+
+              <h2>{mood.label}</h2>
+
+              <p>
+                {date.toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+
+              <p>
+                {date.toLocaleTimeString("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  chooseMood(selectedHistoryItem.mood);
+                  setSelectedHistoryItem(null);
+                }}
+              >
+                Explorar músicas deste clima
+              </button>
+            </div>
+          );
+        })()}
+
+      </div>
+    ) : history.length === 0 ? (
+
       <div className="history-empty">
         <span className="history-empty-mark">H.</span>
         <span className="eyebrow">PÁGINA EM BRANCO</span>
@@ -492,7 +550,9 @@ export default function App() {
           Seus registros aparecerão neste espaço.
         </p>
       </div>
+
     ) : (
+
       <>
         <div className="history-archive-label">
           <span>01 / MEMÓRIAS MUSICAIS</span>
@@ -500,57 +560,6 @@ export default function App() {
         </div>
 
         <div className="history-mosaic">
-          {selectedHistoryItem && (
-  <div className="history-detail">
-    <button
-      onClick={() => setSelectedHistoryItem(null)}
-    >
-      Voltar ao histórico
-    </button>
-
-    {(() => {
-      const mood = moods.find(
-        (m) => m.id === selectedHistoryItem.mood
-      );
-
-      const date = new Date(selectedHistoryItem.createdAt);
-
-      if (!mood) return null;
-
-      return (
-        <div>
-          <span>REGISTRO MUSICAL</span>
-
-          <h2>{mood.label}</h2>
-
-          <p>
-            {date.toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
-
-          <p>
-            {date.toLocaleTimeString("pt-BR", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-
-          <button
-            onClick={() => {
-              chooseMood(selectedHistoryItem.mood);
-              setSelectedHistoryItem(null);
-            }}
-          >
-            Explorar músicas deste clima
-          </button>
-        </div>
-      );
-    })()}
-  </div>
-)}
           {history.map((item, index) => {
             const mood = moods.find((m) => m.id === item.mood);
 
@@ -565,7 +574,10 @@ export default function App() {
                 onClick={() => openHistoryItem(item)}
               >
                 <div className="history-card-top">
-                  <span>NO. {String(index + 1).padStart(2, "0")}</span>
+                  <span>
+                    NO. {String(index + 1).padStart(2, "0")}
+                  </span>
+
                   <span>
                     {date.toLocaleDateString("pt-BR", {
                       day: "2-digit",
@@ -585,6 +597,7 @@ export default function App() {
                     <span className="history-card-caption">
                       CLIMA ESCOLHIDO
                     </span>
+
                     <strong>{mood.label}</strong>
                   </div>
 
@@ -605,8 +618,10 @@ export default function App() {
         </div>
       </>
     )}
+
   </section>
 )}
+
 
 
 
