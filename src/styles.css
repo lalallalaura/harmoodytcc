@@ -71,81 +71,79 @@ h2 { margin: 5px 0 0; font-size: 21px; }
 .hero p, .page-heading p { color: var(--muted); margin: 0; line-height: 1.5; font-size: 13px; }
 
 
-/* MOOD SELECTOR — EDITORIAL */
 
 .mood-editorial-list {
   display: flex;
   flex-direction: column;
   width: 100%;
   margin-top: 28px;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .mood-editorial-item {
+  position: relative;
   display: grid;
-  grid-template-columns: 48px 1fr 30px;
+  grid-template-columns: 42px 1fr;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
-  padding: 23px 8px;
+  padding: 22px 12px;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0;
   background: transparent;
   color: #f5edf5;
   text-align: left;
   cursor: pointer;
-  transition:
-    padding 0.3s ease,
-    background 0.3s ease,
-    opacity 0.3s ease;
+  transition: background 0.25s ease;
+}
+
+.mood-editorial-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 2px;
+  background: #d99acb;
+  transform: scaleY(0);
+  transition: transform 0.25s ease;
 }
 
 .mood-editorial-item:hover {
-  padding-left: 16px;
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.mood-editorial-item.selected::before {
+  transform: scaleY(1);
 }
 
 .mood-number {
-  color: #a69aaa;
+  color: #827889;
   font-family: monospace;
   font-size: 11px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 
 .mood-information {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .mood-information strong {
   font-family: Georgia, serif;
-  font-size: clamp(25px, 4vw, 36px);
+  font-size: clamp(25px, 4vw, 34px);
   font-weight: 400;
   font-style: italic;
-  letter-spacing: -1px;
-  transition: color 0.3s ease;
+  letter-spacing: -0.8px;
+  transition: color 0.25s ease;
 }
 
 .mood-information small {
   color: #aaa0ae;
   font-size: 12px;
-  letter-spacing: 0.2px;
-}
-
-.mood-arrow {
-  color: #a69aaa;
-  font-size: 20px;
-  opacity: 0;
-  transform: translate(-5px, 5px);
-  transition: all 0.3s ease;
-}
-
-.mood-editorial-item:hover .mood-arrow,
-.mood-editorial-item.selected .mood-arrow {
-  opacity: 1;
-  transform: translate(0, 0);
+  line-height: 1.5;
 }
 
 .mood-editorial-item.selected .mood-information strong {
@@ -156,8 +154,20 @@ h2 { margin: 5px 0 0; font-size: 21px; }
   color: #e8a6d6;
 }
 
-.mood-editorial-item.selected {
-  background: rgba(232, 166, 214, 0.045);
+@media (max-width: 600px) {
+  .mood-editorial-item {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 12px;
+    padding: 20px 8px;
+  }
+
+  .mood-information strong {
+    font-size: 27px;
+  }
+
+  .mood-information small {
+    font-size: 11px;
+  }
 }
 
 /* Mobile */
