@@ -2015,3 +2015,669 @@ body {
   }
 }
 
+
+/* =========================================
+   HARMOODY — LIGHT MODE
+   LAVENDER HAZE
+========================================= */
+
+.app-shell[data-theme="light"] {
+  --ink: #F7F3FA;
+  --paper: #35263D;
+  --plum: #35263D;
+  --plum-light: #EDE5F2;
+  --lavender: #A58BB8;
+  --pink: #C99DB8;
+  --acid: #82966C;
+  --muted: #82758A;
+
+  --purple: #A58BB8;
+  --purple-dark: #80658F;
+  --surface: rgba(165, 139, 184, .09);
+  --border: rgba(107, 78, 122, .16);
+  --glow: rgba(165, 139, 184, .13);
+
+  color: #35263D;
+  background: #F7F3FA;
+}
+
+/* FUNDO GERAL */
+
+body:has(.app-shell[data-theme="light"]) {
+  background: #F7F3FA;
+}
+
+.app-shell[data-theme="light"] {
+  background:
+    radial-gradient(ellipse at 12% 5%, rgba(197, 169, 232, .20), transparent 38%),
+    radial-gradient(ellipse at 95% 30%, rgba(201, 157, 184, .13), transparent 35%),
+    #F7F3FA;
+  border-color: rgba(107, 78, 122, .08);
+}
+
+/* HEADER */
+
+.app-shell[data-theme="light"] .topbar {
+  background: rgba(247, 243, 250, .90);
+  border-bottom-color: rgba(107, 78, 122, .13);
+}
+
+.app-shell[data-theme="light"] .brand {
+  color: #35263D;
+  -webkit-text-fill-color: #35263D;
+}
+
+.app-shell[data-theme="light"] .brand-period {
+  color: #C99DB8;
+  -webkit-text-fill-color: #C99DB8;
+}
+
+.app-shell[data-theme="light"] .topbar p {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .brand-mark {
+  background: #E9DDED;
+  color: #80658F;
+}
+
+/* BOTÃO DE TEMA */
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  margin-left: auto;
+  border: 1px solid rgba(197, 169, 232, .25);
+  border-radius: 50%;
+  background: rgba(197, 169, 232, .08);
+  color: #C5A9E8;
+  transition: .2s ease;
+}
+
+.theme-toggle:hover {
+  transform: rotate(12deg);
+  background: rgba(197, 169, 232, .16);
+}
+
+.app-shell[data-theme="light"] .theme-toggle {
+  color: #80658F;
+  background: #EEE6F2;
+  border-color: #DCCDE5;
+}
+
+.app-shell[data-theme="light"] .theme-toggle:hover {
+  background: #E5D9ED;
+}
+
+/* TEXTOS */
+
+.app-shell[data-theme="light"] .eyebrow {
+  color: #92769F;
+}
+
+.app-shell[data-theme="light"] h1,
+.app-shell[data-theme="light"] h2,
+.app-shell[data-theme="light"] h3 {
+  color: #35263D;
+}
+
+.app-shell[data-theme="light"] .mood-intro h2,
+.app-shell[data-theme="light"] .result-heading h2,
+.app-shell[data-theme="light"] .section-title h2,
+.app-shell[data-theme="light"] .profile-heading h1,
+.app-shell[data-theme="light"] .history-heading h1 {
+  color: #35263D;
+}
+
+.app-shell[data-theme="light"] .mood-intro h2 span,
+.app-shell[data-theme="light"] .profile-heading h1 em,
+.app-shell[data-theme="light"] .history-heading h1 em {
+  color: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .mood-description,
+.app-shell[data-theme="light"] .profile-heading p,
+.app-shell[data-theme="light"] .profile-about-content p,
+.app-shell[data-theme="light"] .profile-section-heading p,
+.app-shell[data-theme="light"] .history-heading p,
+.app-shell[data-theme="light"] .home-note p {
+  color: #82758A;
+}
+
+/* HERO */
+
+.app-shell[data-theme="light"] .home-hero {
+  background:
+    linear-gradient(135deg, rgba(233, 221, 239, .85), rgba(250, 246, 252, .92));
+  border-color: rgba(165, 139, 184, .28);
+}
+
+.app-shell[data-theme="light"] .hero-topline,
+.app-shell[data-theme="light"] .hero-bottomline {
+  color: #82758A;
+  border-color: rgba(107, 78, 122, .15);
+}
+
+.app-shell[data-theme="light"] .hero-eyebrow {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .hero-copy h1 {
+  color: #35263D;
+}
+
+.app-shell[data-theme="light"] .hero-copy h1 span {
+  color: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .hero-description {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .hero-description strong {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .hero-scroll {
+  color: #80658F;
+  border-color: #B99FC9;
+}
+
+.app-shell[data-theme="light"] .hero-scroll:hover {
+  color: #FFFFFF;
+  background: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .art-circle {
+  border-color: rgba(165, 139, 184, .40);
+}
+
+.app-shell[data-theme="light"] .art-disc {
+  background:
+    repeating-radial-gradient(
+      circle,
+      #DCCCE7 0,
+      #DCCCE7 3px,
+      #C5AED4 4px,
+      #C5AED4 6px
+    );
+  box-shadow: 0 12px 30px rgba(80, 59, 89, .16);
+}
+
+.app-shell[data-theme="light"] .disc-center {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .art-star,
+.app-shell[data-theme="light"] .art-note,
+.app-shell[data-theme="light"] .art-caption {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .star-two {
+  color: #82966C;
+}
+
+.app-shell[data-theme="light"] .status-dot {
+  background: #82966C;
+  box-shadow: 0 0 8px rgba(130, 150, 108, .3);
+}
+
+/* SELEÇÃO DE HUMOR */
+
+.app-shell[data-theme="light"] .section-kicker {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .section-kicker span:first-child {
+  border-color: rgba(201, 157, 184, .65);
+}
+
+.app-shell[data-theme="light"] .mood-side-note {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .mood-selector-wrap {
+  background: rgba(255, 255, 255, .48);
+  border-color: rgba(165, 139, 184, .22);
+}
+
+.app-shell[data-theme="light"] .mood-editorial-list {
+  border-color: rgba(107, 78, 122, .17);
+}
+
+.app-shell[data-theme="light"] .mood-editorial-item {
+  color: #35263D;
+  border-color: rgba(107, 78, 122, .17);
+}
+
+.app-shell[data-theme="light"] .mood-editorial-item:hover {
+  background: rgba(165, 139, 184, .09);
+}
+
+.app-shell[data-theme="light"] .mood-number {
+  color: #98899D;
+}
+
+.app-shell[data-theme="light"] .mood-information strong {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .mood-information small {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .mood-editorial-item.selected .mood-information strong,
+.app-shell[data-theme="light"] .mood-editorial-item.selected .mood-number {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .selection-footnote {
+  color: #82966C;
+}
+
+/* CARDS DE HUMOR, SE EXISTIREM */
+
+.app-shell[data-theme="light"] .mood-card {
+  color: #503B59;
+  background: linear-gradient(145deg, #F0E8F5, #FAF7FC);
+  border-color: #E2D5EA;
+}
+
+.app-shell[data-theme="light"] .mood-card:nth-child(2) {
+  background: linear-gradient(140deg, #E9EDF6, #FAF7FC);
+}
+
+.app-shell[data-theme="light"] .mood-card:nth-child(3) {
+  background: linear-gradient(140deg, #F5E8EF, #FAF7FC);
+}
+
+.app-shell[data-theme="light"] .mood-card:nth-child(4) {
+  background: linear-gradient(140deg, #EDF0E6, #FAF7FC);
+}
+
+.app-shell[data-theme="light"] .mood-card small {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .mood-card.selected {
+  border-color: #C99DB8;
+  background: linear-gradient(145deg, #F1E3F0, #E9DDED);
+}
+
+/* RESULTADOS E BOTÕES */
+
+.app-shell[data-theme="light"] .reset-button {
+  color: #80658F;
+  background: #F0E9F4;
+  border-color: #DCCDE5;
+}
+
+.app-shell[data-theme="light"] .reset-button:hover {
+  background: #E7DCEC;
+}
+
+.app-shell[data-theme="light"] .score-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(201, 157, 184, .17), transparent 45%),
+    linear-gradient(120deg, #EEE5F3, #FAF6FB);
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .score-icon {
+  color: #80658F;
+  background: #E5D9ED;
+}
+
+.app-shell[data-theme="light"] .score-card p {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .song-count {
+  color: #82758A;
+}
+
+/* MÚSICAS */
+
+.app-shell[data-theme="light"] .song-card {
+  background: linear-gradient(110deg, #FFFCFF, #F2ECF6);
+  border-color: #E8DDEB;
+}
+
+.app-shell[data-theme="light"] .song-card:hover {
+  background: #F0E8F5;
+  border-color: #C9B4D6;
+}
+
+.app-shell[data-theme="light"] .song-info strong {
+  color: #35263D;
+}
+
+.app-shell[data-theme="light"] .song-info > span {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .song-meta span {
+  color: #80658F;
+  background: #EEE5F3;
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .play-button {
+  color: white;
+}
+
+/* ESTADOS VAZIOS */
+
+.app-shell[data-theme="light"] .empty-state {
+  background: rgba(255, 255, 255, .55);
+  border-color: #DCCDE5;
+}
+
+.app-shell[data-theme="light"] .empty-state h3 {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .empty-state p {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .empty-icon {
+  color: #80658F;
+  background: #EEE5F3;
+}
+
+/* HOME NOTE */
+
+.app-shell[data-theme="light"] .home-note {
+  background: #F0E9F4;
+  border-color: #E1D3E9;
+  border-left-color: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .home-note-icon {
+  color: #A47799;
+  background: #F2E3ED;
+}
+
+.app-shell[data-theme="light"] .home-note h3 {
+  color: #503B59;
+}
+
+/* HISTÓRICO */
+
+.app-shell[data-theme="light"] .history-heading h1 {
+  color: #35263D;
+}
+
+.app-shell[data-theme="light"] .history-total strong {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .history-total span {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .history-archive-label {
+  color: #A47799;
+  border-color: #E1D3E9;
+}
+
+/* CARDS DO HISTÓRICO */
+
+.app-shell[data-theme="light"] .history-card {
+  color: #503B59;
+  border-color: rgba(165, 139, 184, .28);
+  box-shadow: 0 5px 18px rgba(80, 59, 89, .05);
+}
+
+.app-shell[data-theme="light"] .history-card-0 {
+  background: linear-gradient(145deg, #E9DDED, #F7F1F8 80%);
+}
+
+.app-shell[data-theme="light"] .history-card-1 {
+  background: linear-gradient(145deg, #E5EAF3, #F5F4FA 80%);
+}
+
+.app-shell[data-theme="light"] .history-card-2 {
+  background: linear-gradient(145deg, #F1DFE9, #F8F1F6 80%);
+}
+
+.app-shell[data-theme="light"] .history-card-3 {
+  background: linear-gradient(145deg, #E9EDDF, #F6F6EF 80%);
+}
+
+.app-shell[data-theme="light"] .history-card-top,
+.app-shell[data-theme="light"] .history-card-caption {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .history-card-bottom {
+  border-color: rgba(107, 78, 122, .18);
+}
+
+.app-shell[data-theme="light"] .history-card-bottom strong {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .history-card-time {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .history-card-open {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .history-card-orbit {
+  border-color: rgba(130, 101, 143, .25);
+}
+
+.app-shell[data-theme="light"] .history-card-orbit::before,
+.app-shell[data-theme="light"] .history-card-orbit::after {
+  border-color: rgba(130, 101, 143, .20);
+}
+
+.app-shell[data-theme="light"] .history-empty {
+  background: rgba(255, 255, 255, .55);
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .history-empty h3 {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .history-empty p {
+  color: #82758A;
+}
+
+/* DETALHES DO HISTÓRICO */
+
+.app-shell[data-theme="light"] .history-detail {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(201, 157, 184, .13), transparent 42%),
+    linear-gradient(145deg, #FFFCFF, #F0EAF5);
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .history-detail > button:first-child {
+  color: #80658F;
+  background: #F0E9F4;
+  border-color: #DCCDE5;
+}
+
+.app-shell[data-theme="light"] .history-detail > div > span {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .history-detail h2 {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .history-detail > div > p {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .history-note {
+  background: #F4EFF7;
+  border-color: #E4D8EA;
+  border-left-color: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .history-note label {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .history-note textarea {
+  color: #503B59;
+  background: #FFFCFF;
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .history-note textarea::placeholder {
+  color: #A69AA9;
+}
+
+.app-shell[data-theme="light"] .history-note textarea:focus {
+  background: #FFFFFF;
+  border-color: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .history-note button,
+.app-shell[data-theme="light"] .history-detail > div > button {
+  color: #80658F;
+  background: #EEE5F3;
+  border-color: #DCCDE5;
+}
+
+.app-shell[data-theme="light"] .history-note button:hover,
+.app-shell[data-theme="light"] .history-detail > div > button:hover {
+  background: #E5D9ED;
+  border-color: #A58BB8;
+}
+
+/* PERFIL */
+
+.app-shell[data-theme="light"] .profile-kicker,
+.app-shell[data-theme="light"] .profile-about-top,
+.app-shell[data-theme="light"] .profile-about-footer,
+.app-shell[data-theme="light"] .profile-section-heading > span {
+  color: #A47799;
+}
+
+.app-shell[data-theme="light"] .profile-heading h1 {
+  color: #35263D;
+}
+
+.app-shell[data-theme="light"] .profile-heading h1 em {
+  color: #A58BB8;
+}
+
+.app-shell[data-theme="light"] .profile-about {
+  background: linear-gradient(130deg, #EEE5F3, #FFFCFF);
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .profile-about-content h2,
+.app-shell[data-theme="light"] .profile-section-heading h2 {
+  color: #503B59;
+}
+
+.app-shell[data-theme="light"] .profile-letter {
+  color: #C99DB8;
+}
+
+.app-shell[data-theme="light"] .profile-about-footer,
+.app-shell[data-theme="light"] .profile-footer {
+  border-color: #E1D3E9;
+}
+
+.app-shell[data-theme="light"] .profile-footer {
+  color: #82758A;
+}
+
+/* SPOTIFY */
+
+.app-shell[data-theme="light"] .spotify-card {
+  background: linear-gradient(135deg, #FFFCFF, #F0EAF5);
+  border-color: #E1D3E9;
+  box-shadow: 0 8px 25px rgba(80, 59, 89, .05);
+}
+
+.app-shell[data-theme="light"] .spotify-status {
+  color: #82758A;
+  background: #F0E9F4;
+}
+
+.app-shell[data-theme="light"] .spotify-status.connected {
+  color: #347D50;
+  background: #E4F2E8;
+}
+
+.app-shell[data-theme="light"] .spotify-status.connected a {
+  color: #347D50;
+}
+
+.app-shell[data-theme="light"] .spotify-card-description {
+  color: #82758A;
+}
+
+.app-shell[data-theme="light"] .spotify-secondary-button {
+  color: #80658F;
+  border-color: #DCCDE5;
+}
+
+.app-shell[data-theme="light"] .spotify-secondary-button:hover {
+  background: #EEE5F3;
+}
+
+.app-shell[data-theme="light"] .spotify-error {
+  color: #A94452;
+  background: #F9E9EC;
+  border-color: #EBC9D0;
+}
+
+/* NAVEGAÇÃO INFERIOR */
+
+.app-shell[data-theme="light"] .bottom-nav {
+  background: rgba(250, 247, 252, .94);
+  border-color: #E5D9ED;
+  box-shadow: 0 -8px 30px rgba(80, 59, 89, .08);
+}
+
+.app-shell[data-theme="light"] .bottom-nav button {
+  color: #A195A8;
+}
+
+.app-shell[data-theme="light"] .bottom-nav button.active {
+  color: #80658F;
+}
+
+/* RODAPÉS */
+
+.app-shell[data-theme="light"] .home-footer {
+  color: #98899D;
+  border-color: #E1D3E9;
+}
+
+/* BOTÕES E FOCO */
+
+.app-shell[data-theme="light"] button:focus-visible {
+  outline-color: #A58BB8;
+}
+
+/* TRANSIÇÃO SUAVE */
+
+.app-shell,
+.app-shell .topbar,
+.app-shell .bottom-nav,
+.app-shell .song-card,
+.app-shell .history-card,
+.app-shell .spotify-card,
+.app-shell .history-detail {
+  transition:
+    background-color .25s ease,
+    border-color .25s ease,
+    color .25s ease;
+}
