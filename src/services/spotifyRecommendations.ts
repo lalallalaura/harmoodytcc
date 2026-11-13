@@ -11,6 +11,7 @@ import {
 import { estimateProfile } from "./moodProfile";
 import {
   getArtistFeedbackScore,
+  getDislikedArtists,
   getFeedback,
   getPreferredGenresFromFeedback,
 } from "./feedback";
@@ -65,19 +66,18 @@ const RESULTS_PER_QUERY = 10;
 const TARGET_COUNT = 12;
 const MAX_PER_ARTIST = 2;
 const MAX_TASTE_QUERIES = 3;
-
-const MOOD_WEIGHT = 0.55;
-const TASTE_WEIGHT = 0.30;
-const POPULARITY_WEIGHT = 0.10;
-const DISCOVERY_WEIGHT = 0.05;
-
 const TASTE_CACHE_MS = 10 * 60 * 1000;
 
-function distance(a: number, b: number): number {
+// Pesos da recomendação.
+const MOOD_WEIGHT = 0.6;
+const TASTE_WEIGHT = 0.3;
+const DISCOVERY_WEIGHT = 0.1;
+
+function distance(a: number, b: number) {
   return Math.abs(a - b);
 }
 
-function normalize(value: string): string {
+function normalize(value: string) {
   return value.trim().toLowerCase();
 }
 
@@ -85,52 +85,109 @@ function normalizeKey(track: SpotifyTrack): string {
   return `${normalize(track.title)}|${normalize(track.artist)}`;
 }
 
-function isGenericTrack(track: SpotifyTrack): boolean {
-  const title = normalize(track.title)
+function normalizeTitle(value: string): string {
+  return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .toLowerCase();
+}
 
-  const genericTitles = [
-    "pop", "rock", "pop rock", "rock pop",
-    "indie pop", "indie rock", "dream pop",
-    "synthpop", "electropop", "electro pop",
-    "dance pop", "dancepop", "alternative pop",
-    "alternative rock", "soft rock", "hard rock",
-    "punk rock", "post rock", "nu disco",
-    "disco", "disco funk", "funk", "soul",
-    "neo soul", "rnb", "r and b", "alternative rnb",
-    "hip hop", "lofi hip hop", "rap", "jazz",
-    "soft jazz", "blues", "folk", "indie folk",
-    "acoustic folk", "country", "bossa nova",
-    "samba", "reggae", "ambient", "downtempo",
-    "slowcore", "chill", "chillout", "chill out",
-    "house", "deep house", "techno", "trance",
-    "edm", "electronic", "electronic music",
-    "classical", "instrumental", "piano",
-    "soft piano", "upbeat pop", "upbeat music",
-    "dance workout", "edm hits", "energetic pop rock",
-    "power pop", "acoustic chill", "ambient calm",
-    "lo fi chill", "romantic r b", "love songs",
-    "love song", "happy", "soul love songs",
-    "acoustic love songs", "singer songwriter love",
-    "feel good indie", "happy indie pop",
-    "chill pop good vibes", "sunny day pop",
-    "indie folk happy",
-  ];
+const GENERIC_TITLES = new Set([
+  "pop",
+  "rock",
+  "pop rock",
+  "rock pop",
+  "indie pop",
+  "indie rock",
+  "dream pop",
+  "synthpop",
+  "electropop",
+  "electro pop",
+  "dance pop",
+  "dancepop",
+  "alternative pop",
+  "alternative rock",
+  "soft rock",
+  "hard rock",
+  "punk rock",
+  "post rock",
+  "nu disco",
+  "disco",
+  "disco funk",
+  "funk",
+  "soul",
+  "neo soul",
+  "rnb",
+  "r and b",
+  "alternative rnb",
+  "hip hop",
+  "lofi hip hop",
+  "rap",
+  "jazz",
+  "soft jazz",
+  "blues",
+  "folk",
+  "indie folk",
+  "acoustic folk",
+  "country",
+  "bossa nova",
+  "samba",
+  "reggae",
+  "ambient",
+  "downtempo",
+  "slowcore",
+  "chill",
+  "chillout",
+  "chill out",
+  "house",
+  "deep house",
+  "techno",
+  "trance",
+  "edm",
+  "electronic",
+  "electronic music",
+  "classical",
+  "instrumental",
+  "piano",
+  "soft piano",
+  "upbeat pop",
+  "upbeat music",
+  "dance workout",
+  "edm hits",
+  "energetic pop rock",
+  "power pop",
+  "acoustic chill",
+  "ambient calm",
+  "lo fi chill",
+  "romantic r b",
+  "love songs",
+  "love song",
+  "happy",
+  "soul love songs",
+  "acoustic love songs",
+  "singer songwriter love",
+  "feel good indie",
+  "happy indie pop",
+  "chill pop good vibes",
+  "sunny day pop",
+  "indie folk happy",
+]);
 
-  return genericTitles.some((genericTitle) => {
-    const normalizedGeneric = genericTitle
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\p{L}\p{N}\s]/gu, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+function isGenericTrack(track: SpotifyTrack): boolean {
+  return GENERIC_TITLES.has(normalizeTitle(track.title));
+}
 
-    return title === normalizedGeneric;
-  });
+function isValidTrack(track: SpotifyTrack): boolean {
+  return Boolean(
+    track.id &&
+    track.title?.trim() &&
+    track.artist?.trim() &&
+    !isGenericTrack(track) &&
+    track.durationMs >= 60000
+  );
 }
 
 interface TasteProfile {
@@ -156,6 +213,7 @@ function getFeedbackSignature(moodId: MoodId): string {
     .map((item) =>
       [
         item.songId,
+        item.mood,
         item.value,
         normalize(item.artist),
         [...(item.genres ?? [])].map(normalize).sort().join(","),
@@ -182,10 +240,9 @@ async function buildTasteProfile(
 
   const favoriteArtistIds = new Set<string>();
   const favoriteArtistNames = new Set<string>();
-  const dislikedArtistNames = new Set<string>();
   const genreCounts = new Map<string, number>();
 
-  // 1. Histórico geral do Spotify.
+  // 1. Histórico musical do Spotify.
   const [topResult, savedResult] = await Promise.allSettled([
     fetchUserTopTracks(10),
     fetchUserSavedTracks(10),
@@ -196,6 +253,7 @@ async function buildTasteProfile(
     ...(savedResult.status === "fulfilled" ? savedResult.value : []),
   ];
 
+  // Evita contar a mesma faixa duas vezes.
   const seenHistoryIds = new Set<string>();
 
   const historyTracks = allHistoryTracks.filter((track) => {
@@ -215,9 +273,9 @@ async function buildTasteProfile(
       (track) => track.artistIds
     );
 
-    const genresByArtist = await fetchArtistsGenres(
-      artistIds
-    ).catch(() => ({} as Record<string, string[]>));
+    const genresByArtist = await fetchArtistsGenres(artistIds).catch(
+      () => ({} as Record<string, string[]>)
+    );
 
     for (const genres of Object.values(genresByArtist)) {
       for (const genre of genres) {
@@ -227,22 +285,18 @@ async function buildTasteProfile(
     }
   }
 
-  // 2. Feedback somente do mood selecionado.
+  // 2. Feedback somente do mood escolhido.
   const moodFeedback = getFeedback().filter(
     (item) => item.mood === moodId
   );
 
   for (const item of moodFeedback) {
-    const artist = normalize(item.artist);
-
     if (item.value === "like") {
-      favoriteArtistNames.add(artist);
-    } else {
-      dislikedArtistNames.add(artist);
+      favoriteArtistNames.add(normalize(item.artist));
     }
   }
 
-  // 3. Gêneros avaliados somente nesse mood.
+  // 3. Preferências de gênero específicas desse mood.
   const feedbackGenres = getPreferredGenresFromFeedback(moodId);
 
   for (const [genre, delta] of feedbackGenres) {
@@ -254,6 +308,7 @@ async function buildTasteProfile(
     );
   }
 
+  // Normaliza os pesos entre -1 e 1.
   const maxAbsWeight = Math.max(
     1,
     ...[...genreCounts.values()].map((value) =>
@@ -267,9 +322,13 @@ async function buildTasteProfile(
     genreWeights.set(genre, weight / maxAbsWeight);
   }
 
+  const dislikedArtistNames = getDislikedArtists(moodId);
+
   const hasSignal =
-    historyTracks.length > 0 ||
-    moodFeedback.length > 0;
+    favoriteArtistIds.size > 0 ||
+    favoriteArtistNames.size > 0 ||
+    dislikedArtistNames.size > 0 ||
+    genreWeights.size > 0;
 
   const profile: TasteProfile = {
     favoriteArtistIds,
@@ -300,34 +359,48 @@ function isFamiliarArtist(
   );
 }
 
+function getGenreAffinity(
+  genres: string[],
+  taste: TasteProfile
+): number {
+  if (genres.length === 0 || taste.genreWeights.size === 0) {
+    return 0;
+  }
+
+  const uniqueGenres = [...new Set(genres.map(normalize))];
+
+  const total = uniqueGenres.reduce(
+    (sum, genre) =>
+      sum + (taste.genreWeights.get(genre) ?? 0),
+    0
+  );
+
+  return total / uniqueGenres.length;
+}
+
+/**
+ * Calcula afinidade musical entre 0 e 1.
+ * Considera artistas conhecidos, gêneros e feedback do mood.
+ */
 function tasteScoreFor(
   track: SpotifyTrack,
   genres: string[],
   taste: TasteProfile,
   moodId: MoodId
 ): number {
+  if (taste.dislikedArtistNames.has(normalize(track.artist))) {
+    return 0;
+  }
+
   let score = 0.5;
 
-  // Artistas presentes no histórico ou curtidos nesse mood.
   if (isFamiliarArtist(track, taste)) {
-    score += 0.12;
+    score += 0.15;
   }
 
-  // Afinidade com os gêneros preferidos.
-  if (genres.length > 0 && taste.genreWeights.size > 0) {
-    const uniqueGenres = [...new Set(genres.map(normalize))];
+  const genreAffinity = getGenreAffinity(genres, taste);
+  score += genreAffinity * 0.25;
 
-    const genreScore =
-      uniqueGenres.reduce(
-        (sum, genre) =>
-          sum + (taste.genreWeights.get(genre) ?? 0),
-        0
-      ) / uniqueGenres.length;
-
-    score += genreScore * 0.25;
-  }
-
-  // Feedback específico do mood.
   const artistFeedback = getArtistFeedbackScore(
     track.artist,
     moodId
@@ -335,40 +408,38 @@ function tasteScoreFor(
 
   score += (artistFeedback / 3) * 0.25;
 
-  // Penalidade adicional para artistas rejeitados nesse mood.
-  if (
-    taste.dislikedArtistNames.has(normalize(track.artist))
-  ) {
-    score -= 0.15;
-  }
-
   return Math.max(0, Math.min(1, score));
 }
 
 /**
- * Pontua a descoberta de artistas novos.
- * A novidade recebe vantagem quando existe afinidade de gênero.
+ * Mede a qualidade de uma descoberta.
+ * Artistas novos recebem vantagem somente quando seus gêneros
+ * apresentam relação com as preferências musicais.
  */
 function discoveryScoreFor(
+  track: SpotifyTrack,
   genres: string[],
-  taste: TasteProfile,
-  isFamiliar: boolean
+  taste: TasteProfile
 ): number {
-  if (isFamiliar) return 0.25;
+  if (isFamiliarArtist(track, taste)) {
+    return 0.5;
+  }
 
-  if (genres.length === 0) return 0.35;
+  if (genres.length === 0 || taste.genreWeights.size === 0) {
+    return 0.5;
+  }
 
-  if (taste.genreWeights.size === 0) return 0.65;
+  const affinity = getGenreAffinity(genres, taste);
 
-  const positiveGenreMatch = genres.some(
-    (genre) => (taste.genreWeights.get(normalize(genre)) ?? 0) > 0
+  return Math.max(
+    0,
+    Math.min(1, 0.5 + affinity * 0.5)
   );
-
-  if (positiveGenreMatch) return 1;
-
-  return 0.4;
 }
 
+/**
+ * Busca novos resultados a partir dos gêneros com avaliação positiva.
+ */
 function buildTasteQueries(
   moodId: MoodId,
   taste: TasteProfile
@@ -405,7 +476,7 @@ async function collectCandidates(
     }
 
     for (const track of outcome.value) {
-      if (isGenericTrack(track)) continue;
+      if (!isValidTrack(track)) continue;
 
       const key = normalizeKey(track);
 
@@ -436,7 +507,7 @@ export async function recommendSongsFromSpotify(
   if (!mood) {
     throw new SpotifyApiError(
       "invalid-mood",
-      "Não foi possível identificar esse clima."
+      "Não foi possível identificar o clima selecionado."
     );
   }
 
@@ -453,6 +524,7 @@ export async function recommendSongsFromSpotify(
     })
   );
 
+  // Busca principal baseada no mood e em gêneros positivos.
   const queries = [
     ...MOOD_QUERIES[moodId],
     ...buildTasteQueries(moodId, taste),
@@ -516,9 +588,9 @@ export async function recommendSongsFromSpotify(
     (track) => track.artistIds
   );
 
-  const genresByArtist = await fetchArtistsGenres(
-    artistIds
-  ).catch(() => ({} as Record<string, string[]>));
+  const genresByArtist = await fetchArtistsGenres(artistIds).catch(
+    () => ({} as Record<string, string[]>)
+  );
 
   const bpmTarget =
     moodId === "energized"
@@ -563,25 +635,17 @@ export async function recommendSongsFromSpotify(
       moodId
     );
 
-    // Popularidade é apenas um critério auxiliar.
-    const popularityScore = Math.max(
-      0,
-      Math.min(1, track.popularity / 100)
-    );
-
-    const familiar = isFamiliarArtist(track, taste);
-
     const discoveryScore = discoveryScoreFor(
+      track,
       genres,
-      taste,
-      familiar
+      taste
     );
 
-    const combinedScore =
-      moodScore * MOOD_WEIGHT +
-      tasteScore * TASTE_WEIGHT +
-      popularityScore * POPULARITY_WEIGHT +
-      discoveryScore * DISCOVERY_WEIGHT;
+    const combinedScore = taste.hasSignal
+      ? moodScore * MOOD_WEIGHT +
+        tasteScore * TASTE_WEIGHT +
+        discoveryScore * DISCOVERY_WEIGHT
+      : moodScore;
 
     const song: Song = {
       id: track.id,
@@ -600,33 +664,79 @@ export async function recommendSongsFromSpotify(
     return {
       song,
       score: combinedScore,
+      moodScore,
+      tasteScore,
+      discoveryScore,
       primaryArtistId: track.artistIds[0] ?? track.artist,
+      isFamiliar: isFamiliarArtist(track, taste),
     };
   });
 
   scored.sort((a, b) => b.score - a.score);
 
-  // Limita repetições, mas não sacrifica a lista inteira por isso.
-  const artistCount = new Map<string, number>();
-  const selected: typeof scored = [];
+  const maxPerArtist = Math.max(
+    MAX_PER_ARTIST,
+    Math.ceil(targetCount / 6)
+  );
+
+  const selected: (typeof scored)[number][] = [];
   const selectedIds = new Set<string>();
+  const artistCount = new Map<string, number>();
 
-  for (const item of scored) {
-    if (selected.length >= targetCount) break;
+  function tryAdd(item: (typeof scored)[number]): boolean {
+    if (selectedIds.has(item.song.id)) return false;
 
-    if (selectedIds.has(item.song.id)) continue;
+    const count = artistCount.get(item.primaryArtistId) ?? 0;
 
-    const count =
-      artistCount.get(item.primaryArtistId) ?? 0;
-
-    if (count >= MAX_PER_ARTIST) continue;
+    if (count >= maxPerArtist) return false;
 
     artistCount.set(item.primaryArtistId, count + 1);
     selected.push(item);
     selectedIds.add(item.song.id);
+
+    return true;
   }
 
-  // Último recurso: completa a lista se houver poucos artistas.
+  // Primeiro, seleciona as melhores recomendações gerais.
+  const discoveryLimit = taste.hasSignal
+    ? Math.min(
+        Math.round(targetCount * 0.25),
+        targetCount
+      )
+    : 0;
+
+  const discoveries = scored.filter(
+    (item) =>
+      !item.isFamiliar &&
+      item.discoveryScore >= 0.6 &&
+      item.tasteScore >= 0.5
+  );
+
+  const mainCandidates = scored.filter(
+    (item) => !discoveries.includes(item)
+  );
+
+  for (const item of mainCandidates) {
+    if (selected.length >= targetCount - discoveryLimit) {
+      break;
+    }
+
+    tryAdd(item);
+  }
+
+  // Depois, inclui descobertas que tenham relação com o gosto pessoal.
+  for (const item of discoveries) {
+    if (selected.length >= targetCount) break;
+    tryAdd(item);
+  }
+
+  // Completa com as melhores opções restantes, sem obrigar descobertas.
+  for (const item of scored) {
+    if (selected.length >= targetCount) break;
+    tryAdd(item);
+  }
+
+  // Último recurso: completa a lista se não houver artistas suficientes.
   if (selected.length < targetCount) {
     for (const item of scored) {
       if (selected.length >= targetCount) break;
@@ -638,8 +748,10 @@ export async function recommendSongsFromSpotify(
   }
 
   const avgScore =
-    selected.reduce((total, item) => total + item.score, 0) /
-    Math.max(selected.length, 1);
+    selected.reduce(
+      (total, item) => total + item.score,
+      0
+    ) / Math.max(selected.length, 1);
 
   return {
     songs: selected.map((item) => item.song),
