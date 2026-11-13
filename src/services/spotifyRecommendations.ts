@@ -83,36 +83,86 @@ function normalizeKey(track: SpotifyTrack): string {
   return `${normalize(track.title)}|${normalize(track.artist)}`;
 }
 
+
 function isGenericTrack(track: SpotifyTrack): boolean {
   const title = normalize(track.title)
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   const genericTitles = [
+    "pop",
+    "rock",
+    "pop rock",
+    "rock pop",
+    "indie pop",
+    "indie rock",
+    "dream pop",
+    "synthpop",
+    "electropop",
+    "electro pop",
+    "dance pop",
+    "dancepop",
+    "alternative pop",
+    "alternative rock",
+    "soft rock",
+    "hard rock",
+    "punk rock",
+    "post rock",
+    "nu disco",
+    "disco",
+    "disco funk",
+    "funk",
+    "soul",
+    "neo soul",
+    "rnb",
+    "r and b",
+    "alternative rnb",
+    "hip hop",
+    "lofi hip hop",
+    "rap",
+    "jazz",
+    "soft jazz",
+    "blues",
+    "folk",
+    "indie folk",
+    "acoustic folk",
+    "country",
+    "bossa nova",
+    "samba",
+    "reggae",
+    "ambient",
+    "downtempo",
+    "slowcore",
+    "chill",
+    "chillout",
+    "chill out",
+    "house",
+    "deep house",
+    "techno",
+    "trance",
+    "edm",
+    "electronic",
+    "electronic music",
+    "classical",
+    "instrumental",
+    "piano",
+    "soft piano",
     "upbeat pop",
     "upbeat music",
     "dance workout",
     "edm hits",
     "energetic pop rock",
     "power pop",
-    "electro pop",
-    "electropop",
     "acoustic chill",
-    "dance pop",
-    "dancepop",
     "ambient calm",
     "lo fi chill",
-    "soft piano",
-    "downtempo",
     "romantic r b",
     "love songs",
     "love song",
-    "Neo",
-    "Neo Soul",
-    "Dream Pop",
-    "POP",
-    "HAPPY ",
+    "happy",
     "soul love songs",
     "acoustic love songs",
     "singer songwriter love",
@@ -123,9 +173,16 @@ function isGenericTrack(track: SpotifyTrack): boolean {
     "indie folk happy",
   ];
 
-  return genericTitles.some(
-    (genericTitle) => normalize(genericTitle) === title
-  );
+  return genericTitles.some((genericTitle) => {
+    const normalizedGeneric = genericTitle
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return title === normalizedGeneric;
+  });
 }
 
 interface TasteProfile {
