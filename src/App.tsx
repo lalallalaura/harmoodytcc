@@ -297,7 +297,7 @@ async function handleShowMore() {
 
               <div className="hero-bottomline">
                 <span>ENCONTRE O SOM DO SEU MOMENTO</span>
-                <span>EST. 2026 · HARMOODY</span>
+                <span> 2026 · HARMOODY</span>
               </div>
             </section>
 
@@ -531,7 +531,7 @@ async function handleShowMore() {
                   <h3>Deixe a música encontrar você.</h3>
                   <p>
                     Escolha um dos quatro climas e descubra uma seleção
-                    musical pensada para o que você deseja sentir.
+                    musical pensada para o que você deseja sentir!
                   </p>
                 </div>
 
@@ -540,7 +540,7 @@ async function handleShowMore() {
 
             <footer className="home-footer">
               <span>HARMOODY © 2026</span>
-              <span>FEEL IT. FIND YOUR SOUND. ♡</span>
+              <span>ENCONTRE SEU SOM. ♡</span>
             </footer>
           </div>
         )}
@@ -609,7 +609,7 @@ async function handleShowMore() {
         </p>
 
 <section className="history-songs">
-  <h3>MINHA TRILHA DESSE MOMENTO</h3>
+  <h3>MINHA TRILHA DO MOMENTO</h3>
 
   {selectedHistoryItem.songs?.length ? (
     <div className="history-songs-list">
