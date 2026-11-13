@@ -29,6 +29,7 @@ import { MoodId } from "./types";
 import {
   getHistory,
   saveHistory,
+  updateHistorySongs,
   updateHistoryNote,
   deleteHistory,
   type HistoryItem,
@@ -52,6 +53,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [historyNote, setHistoryNote] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>(getHistory());
+  const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [moreLoading, setMoreLoading] = useState(false);
@@ -63,36 +65,46 @@ export default function App() {
   useEffect(() => {
   localStorage.setItem("harmoody_theme", theme);
 }, [theme]);
-  useEffect(() => {
-    if (!selectedMood) {
-      setResult(null);
-      return;
-    }
 
-    let cancelled = false;
-    setLoading(true);
-    setPlaylistState({ status: "idle" });
-    setShownIds([]);
-    setPlaylistSize(12);
+  
+useEffect(() => {
+  if (!selectedMood) {
+    setResult(null);
+    setCurrentHistoryId(null);
+    return;
+  }
 
-    recommendSongs(selectedMood).then((data) => {
-      if (!cancelled) {
-        setResult(data);
-        setLoading(false);
+  let cancelled = false;
 
-        if (data.source === "spotify") {
-          setShownIds(data.songs.map((s) => s.id));
-        }
+  setLoading(true);
+  setPlaylistState({ status: "idle" });
+  setShownIds([]);
+  setPlaylistSize(12);
+  setCurrentHistoryId(null);
+
+  recommendSongs(selectedMood).then((data) => {
+    if (!cancelled) {
+      setResult(data);
+      setLoading(false);
+
+      if (data.source === "spotify") {
+        setShownIds(data.songs.map((s) => s.id));
       }
-    });
 
-    saveHistory(selectedMood);
-    setHistory(getHistory());
+      const newHistoryItem = saveHistory(
+        selectedMood,
+        data.songs
+      );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedMood]);
+      setCurrentHistoryId(newHistoryItem.id);
+      setHistory(getHistory());
+    }
+  });
+
+  return () => {
+    cancelled = true;
+  };
+}, [selectedMood]);
 
   const currentMood = moods.find((m) => m.id === selectedMood);
 
@@ -136,29 +148,36 @@ function handleDeleteHistoryItem() {
   setSelectedHistoryItem(null);
   setHistoryNote("");
 }
-  async function handleShowMore() {
-    if (!selectedMood || moreLoading) return;
+  
+async function handleShowMore() {
+  if (!selectedMood || moreLoading) return;
 
-    setMoreLoading(true);
+  setMoreLoading(true);
 
-    try {
-      const data = await recommendSongs(selectedMood, {
-        excludeIds: shownIds,
-      });
+  try {
+    const data = await recommendSongs(selectedMood, {
+      excludeIds: shownIds,
+    });
 
-      setResult(data);
-      setPlaylistState({ status: "idle" });
+    setResult(data);
+    setPlaylistState({ status: "idle" });
 
-      if (data.source === "spotify") {
-        setShownIds((prev) => [
-          ...prev,
-          ...data.songs.map((s) => s.id),
-        ]);
+    if (data.source === "spotify") {
+      setShownIds((prev) => [
+        ...prev,
+        ...data.songs.map((s) => s.id),
+      ]);
+
+      if (currentHistoryId) {
+        updateHistorySongs(currentHistoryId, data.songs);
+        setHistory(getHistory());
       }
-    } finally {
-      setMoreLoading(false);
     }
+  } finally {
+    setMoreLoading(false);
   }
+}
+
 
   async function handleCreatePlaylist() {
     if (!result || !currentMood || result.source !== "spotify") return;
@@ -588,6 +607,52 @@ function handleDeleteHistoryItem() {
             year: "numeric",
           })}
         </p>
+
+<section className="history-songs">
+  <h3>MINHA TRILHA DESSE MOMENTO</h3>
+
+  {selectedHistoryItem.songs?.length ? (
+    <div className="history-songs-list">
+      {selectedHistoryItem.songs.map((song, index) => (
+        <div
+          className="history-song-item"
+          key={`${song.id}-${index}`}
+        >
+          {song.cover ? (
+            <img
+              src={song.cover}
+              alt={`Capa de ${song.title}`}
+            />
+          ) : (
+            <div className="history-song-placeholder">♪</div>
+          )}
+
+          <div className="history-song-info">
+            <strong>{song.title}</strong>
+            <span>{song.artist}</span>
+          </div>
+
+          {song.spotifyUrl && (
+            <a
+              href={song.spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Abrir ${song.title} no Spotify`}
+            >
+              ↗
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p>
+      Este registro não possui músicas salvas.
+      Os registros anteriores à atualização não guardavam essa informação.
+    </p>
+  )}
+</section>
+
 
         <p>
           {date.toLocaleTimeString("pt-BR", {
