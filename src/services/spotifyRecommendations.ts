@@ -309,6 +309,7 @@ function buildTasteQueries(
   );
 }
 
+
 async function collectCandidates(
   queries: string[],
   offset: number
@@ -330,6 +331,8 @@ async function collectCandidates(
     }
 
     for (const track of outcome.value) {
+      if (isGenericTrack(track)) continue;
+
       const key = normalizeKey(track);
 
       if (seen.has(key)) continue;
@@ -349,6 +352,8 @@ async function collectCandidates(
 
   return candidates;
 }
+
+
 
 export async function recommendSongsFromSpotify(
   moodId: MoodId,
