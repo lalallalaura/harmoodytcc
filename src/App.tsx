@@ -443,7 +443,6 @@ export default function App() {
                   </p>
                 </div>
 
-                <span className="note-decoration">✳</span>
               </section>
             )}
 
