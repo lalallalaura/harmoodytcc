@@ -1870,3 +1870,148 @@ body {
   }
 }
 
+/* =========================================
+   HISTORY DETAIL — EDITORIAL DIARY
+========================================= */
+
+.history-detail {
+  padding: 24px;
+  border: 1px solid rgba(197,169,232,.2);
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(237,159,197,.09), transparent 42%),
+    linear-gradient(145deg, rgba(57,36,65,.48), rgba(19,13,25,.75));
+  border-radius: 3px 22px 3px 22px;
+  animation: homeAppear .4s ease both;
+}
+
+.history-detail > button:first-child {
+  margin-bottom: 35px;
+  padding: 9px 13px;
+  border: 1px solid rgba(197,169,232,.25);
+  background: rgba(197,169,232,.07);
+  color: var(--lavender);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+  transition: .2s ease;
+}
+
+.history-detail > button:first-child:hover {
+  background: rgba(197,169,232,.15);
+  border-color: var(--lavender);
+}
+
+.history-detail > div > span {
+  color: var(--pink);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .15em;
+}
+
+.history-detail h2 {
+  margin: 13px 0 18px;
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(35px, 7vw, 48px);
+  font-weight: 400;
+}
+
+.history-detail > div > p {
+  margin: 5px 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.history-note {
+  margin: 32px 0 25px;
+  padding: 20px;
+  background: rgba(197,169,232,.055);
+  border: 1px solid rgba(197,169,232,.16);
+  border-left: 2px solid var(--lavender);
+}
+
+.history-note label {
+  display: block;
+  margin-bottom: 13px;
+  color: var(--pink);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .13em;
+}
+
+.history-note textarea {
+  display: block;
+  width: 100%;
+  min-height: 125px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid rgba(197,169,232,.18);
+  border-radius: 2px 12px 2px 12px;
+  outline: none;
+  background: rgba(19,13,25,.65);
+  color: var(--paper);
+  font: 12px/1.8 var(--sans);
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.history-note textarea::placeholder {
+  color: #8e8095;
+}
+
+.history-note textarea:focus {
+  border-color: var(--lavender);
+  background: rgba(19,13,25,.9);
+}
+
+.history-note button,
+.history-detail > div > button {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border: 1px solid rgba(237,159,197,.4);
+  background: rgba(237,159,197,.09);
+  color: var(--pink);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .07em;
+  transition: .2s ease;
+}
+
+.history-note button:hover,
+.history-detail > div > button:hover {
+  background: rgba(237,159,197,.18);
+  border-color: var(--pink);
+  transform: translateY(-2px);
+}
+
+.history-detail > div > button:last-child {
+  margin-left: 9px;
+  border-color: rgba(248,113,113,.25);
+  background: rgba(248,113,113,.06);
+  color: #e99a9a;
+}
+
+.history-detail > div > button:last-child:hover {
+  background: rgba(248,113,113,.14);
+  border-color: #e99a9a;
+}
+
+@media (max-width: 560px) {
+  .history-detail {
+    padding: 17px;
+  }
+
+  .history-note {
+    padding: 15px;
+  }
+
+  .history-detail > div > button {
+    margin-left: 0;
+    margin-right: 5px;
+  }
+
+  .history-detail > div > button:last-child {
+    margin-left: 0;
+  }
+}
+
