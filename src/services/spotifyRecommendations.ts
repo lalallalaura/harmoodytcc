@@ -16,17 +16,49 @@ import {
 } from "./feedback";
 
 const MOOD_QUERIES: Record<MoodId, string[]> = {
-  energized: ["upbeat pop", "dance workout", "edm hits", "energetic pop rock", "power pop"],
-  calm: ["acoustic chill", "ambient calm", "lo-fi chill", "soft piano", "downtempo"],
-  romantic: ["romantic r&b", "love songs", "soul love songs", "acoustic love songs", "singer songwriter love"],
-  light: ["feel good indie", "happy indie pop", "chill pop good vibes", "sunny day pop", "indie folk happy"],
+  energized: [
+    "electropop",
+    "dance pop",
+    "pop rock",
+    "synthpop",
+    "disco funk",
+    "indie dance",
+    "nu disco",
+  ],
+  calm: [
+    "ambient",
+    "dream pop",
+    "indie folk",
+    "acoustic folk",
+    "lofi hip hop",
+    "slowcore",
+    "soft jazz",
+  ],
+  romantic: [
+    "neo soul",
+    "alternative r&b",
+    "dream pop",
+    "soul ballads",
+    "indie love songs",
+    "bedroom pop",
+    "bossa nova",
+  ],
+  light: [
+    "indie pop",
+    "sunshine pop",
+    "jangle pop",
+    "twee pop",
+    "indie folk",
+    "sophisti pop",
+    "chamber pop",
+  ],
 };
 
 const MOOD_KEYWORD: Record<MoodId, string> = {
-  energized: "upbeat",
-  calm: "chill",
-  romantic: "romantic",
-  light: "feel good",
+  energized: "dance pop",
+  calm: "ambient",
+  romantic: "neo soul",
+  light: "indie pop",
 };
 
 const RESULTS_PER_QUERY = 10;
@@ -50,7 +82,38 @@ function normalize(value: string) {
 function normalizeKey(track: SpotifyTrack): string {
   return `${normalize(track.title)}|${normalize(track.artist)}`;
 }
+function isGenericTrack(track: SpotifyTrack): boolean {
+  const title = normalize(track.title)
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
+  const genericTitles = [
+    "upbeat pop",
+    "upbeat music",
+    "dance workout",
+    "edm hits",
+    "energetic pop rock",
+    "power pop",
+    "acoustic chill",
+    "ambient calm",
+    "lo fi chill",
+    "soft piano",
+    "downtempo",
+    "romantic r b",
+    "love songs",
+    "soul love songs",
+    "acoustic love songs",
+    "singer songwriter love",
+    "feel good indie",
+    "happy indie pop",
+    "chill pop good vibes",
+    "sunny day pop",
+    "indie folk happy",
+  ];
+
+  return genericTitles.includes(title);
+}
 interface TasteProfile {
   favoriteArtistIds: Set<string>;
   favoriteArtistNames: Set<string>;
