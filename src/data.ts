@@ -4,7 +4,6 @@ export const moods: Mood[] = [
   {
     id: "energized",
     label: "Energizado",
-    emoji: "⚡",
     description: "Quero ganhar energia e disposição",
     energy: 0.88,
     valence: 0.82,
@@ -12,7 +11,6 @@ export const moods: Mood[] = [
   {
     id: "calm",
     label: "Calmo",
-    emoji: "🌿",
     description: "Quero desacelerar e respirar",
     energy: 0.28,
     valence: 0.55,
@@ -20,7 +18,6 @@ export const moods: Mood[] = [
   {
     id: "romantic",
     label: "Romântico",
-    emoji: "💖",
     description: "Quero um clima especial",
     energy: 0.45,
     valence: 0.72,
@@ -28,7 +25,6 @@ export const moods: Mood[] = [
   {
     id: "light",
     label: "Leve",
-    emoji: "☁️",
     description: "Quero ficar bem e tranquilo",
     energy: 0.52,
     valence: 0.68,
