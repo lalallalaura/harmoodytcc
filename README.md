@@ -1,8 +1,8 @@
-# Harmoody — versão funcional
+Harmoody — versão funcional
 
-Esta versão é um app React + TypeScript + Vite totalmente autocontido.
+Esta versão é um app React + TypeScript + Vite
 
-## O que já funciona
+O que já funciona:
 
 - Seleção de 4 experiências desejadas: Energizado, Calmo, Romântico e Leve.
 - Cards clicáveis com estado selecionado.
