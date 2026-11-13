@@ -25,6 +25,12 @@ import {
 import { createPlaylistFromRecommendations } from "./services/spotifyPlaylist";
 import { getHistory, HistoryItem, saveHistory } from "./services/history";
 import { MoodId } from "./types";
+import {
+  getHistory,
+  saveHistory,
+  updateHistoryNote,
+  deleteHistory,
+} from "./services/history";
 
 type PlaylistState =
   | { status: "idle" }
@@ -37,6 +43,7 @@ export default function App() {
   const [selectedHistoryItem, setSelectedHistoryItem] =
   useState<HistoryItem | null>(null);
   const [activeTab, setActiveTab] = useState("home");
+  const [historyNote, setHistoryNote] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>(getHistory());
   const [result, setResult] = useState<RecommendationResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,8 +97,36 @@ export default function App() {
   }
   function openHistoryItem(item: HistoryItem) {
   setSelectedHistoryItem(item);
+  setHistoryNote(item.note || "");
+}
+function handleSaveHistoryNote() {
+  if (!selectedHistoryItem) return;
+
+  updateHistoryNote(selectedHistoryItem.id, historyNote);
+
+  const updatedItem = {
+    ...selectedHistoryItem,
+    note: historyNote,
+  };
+
+  setSelectedHistoryItem(updatedItem);
+  setHistory(getHistory());
 }
 
+function handleDeleteHistoryItem() {
+  if (!selectedHistoryItem) return;
+
+  const confirmed = window.confirm(
+    "Tem certeza que deseja excluir este registro?"
+  );
+
+  if (!confirmed) return;
+
+  deleteHistory(selectedHistoryItem.id);
+  setHistory(getHistory());
+  setSelectedHistoryItem(null);
+  setHistoryNote("");
+}
   async function handleShowMore() {
     if (!selectedMood || moreLoading) return;
 
@@ -486,59 +521,90 @@ export default function App() {
     </header>
 
     {selectedHistoryItem ? (
-      <div className="history-detail">
+      
+<div className="history-detail">
+  <button
+    type="button"
+    onClick={() => {
+      setSelectedHistoryItem(null);
+      setHistoryNote("");
+    }}
+  >
+    Voltar ao histórico
+  </button>
+
+  {(() => {
+    const mood = moods.find(
+      (m) => m.id === selectedHistoryItem.mood
+    );
+
+    const date = new Date(selectedHistoryItem.createdAt);
+
+    if (!mood) return null;
+
+    return (
+      <div>
+        <span>REGISTRO MUSICAL</span>
+
+        <h2>{mood.label}</h2>
+
+        <p>
+          {date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
+
+        <p>
+          {date.toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+
+        <div className="history-note">
+          <label htmlFor="history-note-input">
+            MINHAS ANOTAÇÕES
+          </label>
+
+          <textarea
+            id="history-note-input"
+            value={historyNote}
+            onChange={(e) => setHistoryNote(e.target.value)}
+            placeholder="O que estava passando pela sua cabeça naquele momento?"
+            rows={5}
+          />
+
+          <button
+            type="button"
+            onClick={handleSaveHistoryNote}
+          >
+            Salvar anotação
+          </button>
+        </div>
 
         <button
           type="button"
-          onClick={() => setSelectedHistoryItem(null)}
+          onClick={() => {
+            chooseMood(selectedHistoryItem.mood);
+            setSelectedHistoryItem(null);
+          }}
         >
-          Voltar ao histórico
+          Explorar músicas deste clima
         </button>
 
-        {(() => {
-          const mood = moods.find(
-            (m) => m.id === selectedHistoryItem.mood
-          );
-
-          const date = new Date(selectedHistoryItem.createdAt);
-
-          if (!mood) return null;
-
-          return (
-            <div>
-              <span>REGISTRO MUSICAL</span>
-
-              <h2>{mood.label}</h2>
-
-              <p>
-                {date.toLocaleDateString("pt-BR", {
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-
-              <p>
-                {date.toLocaleTimeString("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  chooseMood(selectedHistoryItem.mood);
-                  setSelectedHistoryItem(null);
-                }}
-              >
-                Explorar músicas deste clima
-              </button>
-            </div>
-          );
-        })()}
-
+        <button
+          type="button"
+          onClick={handleDeleteHistoryItem}
+        >
+          Excluir registro
+        </button>
       </div>
+    );
+  })()}
+</div>
+
     ) : history.length === 0 ? (
 
       <div className="history-empty">
