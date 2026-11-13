@@ -1406,4 +1406,200 @@ body {
     padding: 11px;
   }
 }
+/* =========================================
+   PROFILE — INDIE MUSIC ZINE
+========================================= */
 
+.profile-page {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 20px 0 40px;
+}
+
+.profile-heading {
+  max-width: 700px;
+  padding: 35px 0 55px;
+}
+
+.profile-kicker,
+.profile-about-top,
+.profile-about-footer,
+.profile-section-heading > span {
+  color: var(--pink);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+}
+
+.profile-heading h1 {
+  margin: 22px 0 20px;
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(42px, 7vw, 76px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -2px;
+}
+
+.profile-heading h1 em {
+  color: var(--lavender);
+  font-weight: 400;
+}
+
+.profile-heading p {
+  max-width: 480px;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+/* SOBRE O PROJETO */
+
+.profile-about {
+  padding: 25px 30px;
+  border: 1px solid rgba(197, 169, 232, 0.2);
+  background: linear-gradient(
+    130deg,
+    rgba(57, 36, 65, 0.8),
+    rgba(19, 13, 25, 0.85)
+  );
+}
+
+.profile-about-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-about-content {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: center;
+  gap: 25px;
+  padding: 45px 0;
+}
+
+.profile-letter {
+  color: var(--pink);
+  font-family: var(--display);
+  font-size: 110px;
+  font-style: italic;
+  line-height: 1;
+}
+
+.profile-about-content h2,
+.profile-section-heading h2 {
+  margin: 0 0 12px;
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.profile-about-content p,
+.profile-section-heading p {
+  max-width: 530px;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.profile-about-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* SPOTIFY */
+
+.profile-spotify {
+  margin-top: 65px;
+}
+
+.profile-section-heading {
+  margin-bottom: 25px;
+}
+
+.profile-section-heading h2 {
+  margin-top: 13px;
+}
+
+/* RODAPÉ */
+
+.profile-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 65px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  .profile-page {
+    padding: 10px 0 30px;
+  }
+
+  .profile-heading {
+    padding: 25px 0 38px;
+  }
+
+  .profile-heading h1 {
+    font-size: clamp(38px, 10vw, 50px);
+    letter-spacing: -1.5px;
+  }
+
+  .profile-heading p {
+    font-size: 12px;
+  }
+
+  .profile-about {
+    padding: 20px;
+  }
+
+  .profile-about-top {
+    font-size: 9px;
+  }
+
+  .profile-about-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 30px 0;
+  }
+
+  .profile-letter {
+    font-size: 75px;
+  }
+
+  .profile-about-content h2,
+  .profile-section-heading h2 {
+    font-size: 26px;
+  }
+
+  .profile-about-footer {
+    gap: 15px;
+    font-size: 9px;
+  }
+
+  .profile-spotify {
+    margin-top: 45px;
+  }
+
+  .profile-footer {
+    margin-top: 45px;
+    font-size: 8px;
+  }
+}
