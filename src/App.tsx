@@ -23,7 +23,6 @@ import {
   RecommendationResult,
 } from "./services/recommendations";
 import { createPlaylistFromRecommendations } from "./services/spotifyPlaylist";
-import { getHistory, HistoryItem, saveHistory } from "./services/history";
 import { MoodId } from "./types";
 import {
   getHistory,
