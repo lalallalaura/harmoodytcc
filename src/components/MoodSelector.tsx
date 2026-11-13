@@ -28,8 +28,6 @@ export function MoodSelector({ selected, onSelect }: Props) {
             <strong>{mood.label}</strong>
             <small>{mood.description}</small>
           </span>
-
-          <span className="mood-arrow">↗</span>
         </button>
       ))}
     </div>
