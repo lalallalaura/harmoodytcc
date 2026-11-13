@@ -456,52 +456,104 @@ export default function App() {
 
         {/* HISTÓRICO */}
 
-        {activeTab === "history" && (
-          <section>
-            <div className="page-heading">
-              <span className="eyebrow">SUAS ESCOLHAS</span>
-              <h1>Histórico</h1>
-              <p>Veja os climas que você escolheu recentemente.</p>
-            </div>
+        
+{/* HISTÓRICO */}
 
-            {history.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">♡</div>
-                <h3>Ainda não há histórico</h3>
-                <p>
-                  Escolha um clima na página inicial para começar.
-                </p>
-              </div>
-            ) : (
-              <div className="history-list">
-                {history.map((item) => {
-                  const mood = moods.find((m) => m.id === item.mood)!;
+{activeTab === "history" && (
+  <section className="history-page">
 
-                  return (
-                    <button
-                      key={item.id}
-                      className="history-item"
-                      onClick={() => chooseMood(item.mood)}
-                    >
-                      <span className="history-emoji">{mood.emoji}</span>
-                      <div>
-                        <strong>{mood.label}</strong>
-                        <span>
-                          {new Date(item.createdAt).toLocaleString("pt-BR", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        )}
+    <header className="history-intro">
+      <div className="history-heading">
+        <span className="eyebrow">HARMOODY / SEU ARQUIVO PESSOAL</span>
+        <h1>Fragmentos <em>de você.</em></h1>
+        <p>
+          Cada escolha guarda um pouco do que você sentiu
+          e daquilo que quis encontrar na música.
+        </p>
+      </div>
 
-        {/* PERFIL */}
+      <div className="history-total">
+        <strong>{String(history.length).padStart(2, "0")}</strong>
+        <span>REGISTROS</span>
+      </div>
+    </header>
+
+    {history.length === 0 ? (
+      <div className="history-empty">
+        <span className="history-empty-mark">H.</span>
+        <span className="eyebrow">PÁGINA EM BRANCO</span>
+        <h3>Sua história começa aqui.</h3>
+        <p>
+          Escolha um clima na página inicial.
+          Seus registros aparecerão neste espaço.
+        </p>
+      </div>
+    ) : (
+      <>
+        <div className="history-archive-label">
+          <span>01 / MEMÓRIAS MUSICAIS</span>
+          <span>REGISTROS RECENTES</span>
+        </div>
+
+        <div className="history-mosaic">
+          {history.map((item, index) => {
+            const mood = moods.find((m) => m.id === item.mood);
+
+            if (!mood) return null;
+
+            const date = new Date(item.createdAt);
+
+            return (
+              <button
+                key={item.id}
+                className={`history-card history-card-${index % 4}`}
+                onClick={() => chooseMood(item.mood)}
+              >
+                <div className="history-card-top">
+                  <span>NO. {String(index + 1).padStart(2, "0")}</span>
+                  <span>
+                    {date.toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+
+                <div className="history-card-art">
+                  <span>{mood.emoji}</span>
+                  <div className="history-card-orbit" />
+                </div>
+
+                <div className="history-card-bottom">
+                  <div>
+                    <span className="history-card-caption">
+                      CLIMA ESCOLHIDO
+                    </span>
+                    <strong>{mood.label}</strong>
+                  </div>
+
+                  <span className="history-card-time">
+                    {date.toLocaleTimeString("pt-BR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+
+                <span className="history-card-open">
+                  ABRIR REGISTRO ↗
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </>
+    )}
+  </section>
+)}
+
+
 
 
         {/* PERFIL */}
