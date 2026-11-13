@@ -7,7 +7,6 @@ import {
   ListMusic,
   CheckCircle2,
   RefreshCw,
-  Music2,
   ArrowDown,
   Disc3,
   Sun,
@@ -43,13 +42,16 @@ type PlaylistState =
 
 export default function App() {
   const [selectedMood, setSelectedMood] = useState<MoodId | null>(null);
+
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-  return localStorage.getItem("harmoody_theme") === "light"
-    ? "light"
-    : "dark";
-});
+    return localStorage.getItem("harmoody_theme") === "light"
+      ? "light"
+      : "dark";
+  });
+
   const [selectedHistoryItem, setSelectedHistoryItem] =
-  useState<HistoryItem | null>(null);
+    useState<HistoryItem | null>(null);
+
   const [activeTab, setActiveTab] = useState("home");
   const [historyNote, setHistoryNote] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>(getHistory());
@@ -59,54 +61,58 @@ export default function App() {
   const [moreLoading, setMoreLoading] = useState(false);
   const [shownIds, setShownIds] = useState<string[]>([]);
   const [playlistSize, setPlaylistSize] = useState(12);
+
   const [playlistState, setPlaylistState] = useState<PlaylistState>({
     status: "idle",
   });
+
   useEffect(() => {
-  localStorage.setItem("harmoody_theme", theme);
-}, [theme]);
+    localStorage.setItem("harmoody_theme", theme);
+  }, [theme]);
 
-  
-useEffect(() => {
-  if (!selectedMood) {
-    setResult(null);
-    setCurrentHistoryId(null);
-    return;
-  }
-
-  let cancelled = false;
-
-  setLoading(true);
-  setPlaylistState({ status: "idle" });
-  setShownIds([]);
-  setPlaylistSize(12);
-  setCurrentHistoryId(null);
-
-  recommendSongs(selectedMood).then((data) => {
-    if (!cancelled) {
-      setResult(data);
-      setLoading(false);
-
-      if (data.source === "spotify") {
-        setShownIds(data.songs.map((s) => s.id));
-      }
-
-      const newHistoryItem = saveHistory(
-        selectedMood,
-        data.songs
-      );
-
-      setCurrentHistoryId(newHistoryItem.id);
-      setHistory(getHistory());
+  useEffect(() => {
+    if (!selectedMood) {
+      setResult(null);
+      setCurrentHistoryId(null);
+      return;
     }
-  });
 
-  return () => {
-    cancelled = true;
-  };
-}, [selectedMood]);
+    let cancelled = false;
 
-  const currentMood = moods.find((m) => m.id === selectedMood);
+    setLoading(true);
+    setPlaylistState({ status: "idle" });
+    setShownIds([]);
+    setPlaylistSize(12);
+    setCurrentHistoryId(null);
+
+    recommendSongs(selectedMood)
+      .then((data) => {
+        if (cancelled) return;
+
+        setResult(data);
+        setLoading(false);
+
+        if (data.source === "spotify") {
+          setShownIds(data.songs.map((song) => song.id));
+        }
+
+        const newHistoryItem = saveHistory(selectedMood, data.songs);
+
+        setCurrentHistoryId(newHistoryItem.id);
+        setHistory(getHistory());
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMood]);
+
+  const currentMood = moods.find((mood) => mood.id === selectedMood);
 
   function chooseMood(mood: MoodId) {
     setSelectedMood(mood);
@@ -116,68 +122,69 @@ useEffect(() => {
   function reset() {
     setSelectedMood(null);
   }
+
   function openHistoryItem(item: HistoryItem) {
-  setSelectedHistoryItem(item);
-  setHistoryNote(item.note || "");
-}
-function handleSaveHistoryNote() {
-  if (!selectedHistoryItem) return;
-
-  updateHistoryNote(selectedHistoryItem.id, historyNote);
-
-  const updatedItem = {
-    ...selectedHistoryItem,
-    note: historyNote,
-  };
-
-  setSelectedHistoryItem(updatedItem);
-  setHistory(getHistory());
-}
-
-function handleDeleteHistoryItem() {
-  if (!selectedHistoryItem) return;
-
-  const confirmed = window.confirm(
-    "Tem certeza que deseja excluir este registro?"
-  );
-
-  if (!confirmed) return;
-
-  deleteHistory(selectedHistoryItem.id);
-  setHistory(getHistory());
-  setSelectedHistoryItem(null);
-  setHistoryNote("");
-}
-  
-async function handleShowMore() {
-  if (!selectedMood || moreLoading) return;
-
-  setMoreLoading(true);
-
-  try {
-    const data = await recommendSongs(selectedMood, {
-      excludeIds: shownIds,
-    });
-
-    setResult(data);
-    setPlaylistState({ status: "idle" });
-
-    if (data.source === "spotify") {
-      setShownIds((prev) => [
-        ...prev,
-        ...data.songs.map((s) => s.id),
-      ]);
-
-      if (currentHistoryId) {
-        updateHistorySongs(currentHistoryId, data.songs);
-        setHistory(getHistory());
-      }
-    }
-  } finally {
-    setMoreLoading(false);
+    setSelectedHistoryItem(item);
+    setHistoryNote(item.note || "");
   }
-}
 
+  function handleSaveHistoryNote() {
+    if (!selectedHistoryItem) return;
+
+    updateHistoryNote(selectedHistoryItem.id, historyNote);
+
+    const updatedItem = {
+      ...selectedHistoryItem,
+      note: historyNote,
+    };
+
+    setSelectedHistoryItem(updatedItem);
+    setHistory(getHistory());
+  }
+
+  function handleDeleteHistoryItem() {
+    if (!selectedHistoryItem) return;
+
+    const confirmed = window.confirm(
+      "Tem certeza que deseja excluir este registro?"
+    );
+
+    if (!confirmed) return;
+
+    deleteHistory(selectedHistoryItem.id);
+    setHistory(getHistory());
+    setSelectedHistoryItem(null);
+    setHistoryNote("");
+  }
+
+  async function handleShowMore() {
+    if (!selectedMood || moreLoading) return;
+
+    setMoreLoading(true);
+
+    try {
+      const data = await recommendSongs(selectedMood, {
+        excludeIds: shownIds,
+      });
+
+      setResult(data);
+      setPlaylistState({ status: "idle" });
+
+      if (data.source === "spotify") {
+        setShownIds((previous) => [
+          ...previous,
+          ...data.songs.map((song) => song.id),
+        ]);
+
+        if (currentHistoryId) {
+          updateHistorySongs(currentHistoryId, data.songs);
+          setHistory(getHistory());
+        }
+      }
+    } finally {
+      setMoreLoading(false);
+    }
+  }
 
   async function handleCreatePlaylist() {
     if (!result || !currentMood || result.source !== "spotify") return;
@@ -191,7 +198,10 @@ async function handleShowMore() {
         playlistSize
       );
 
-      setPlaylistState({ status: "done", url: created.url });
+      setPlaylistState({
+        status: "done",
+        url: created.url,
+      });
     } catch (err: any) {
       setPlaylistState({
         status: "error",
@@ -203,51 +213,53 @@ async function handleShowMore() {
   }
 
   return (
-<div className="app-shell" data-theme={theme}>
-  <header className="topbar">
-    <div className="topbar-brand">
-      <span className="brand">
-        HARMOODY<span className="brand-period">.</span>
-      </span>
-      <p>música para o que você quer sentir</p>
-    </div>
+    <div className="app-shell" data-theme={theme}>
+      <header className="topbar">
+        <div className="topbar-brand">
+          <span className="brand">
+            HARMOODY<span className="brand-period">.</span>
+          </span>
+          <p>música para o que você quer sentir</p>
+        </div>
 
-    <button
-      type="button"
-      className="theme-toggle"
-      onClick={() =>
-        setTheme((current) =>
-          current === "dark" ? "light" : "dark"
-        )
-      }
-      aria-label={
-        theme === "dark"
-          ? "Ativar modo claro"
-          : "Ativar modo escuro"
-      }
-      title={
-        theme === "dark"
-          ? "Ativar modo claro"
-          : "Ativar modo escuro"
-      }
-    >
-      {theme === "dark" ? (
-        <Sun size={20} strokeWidth={1.8} />
-      ) : (
-        <Moon size={20} strokeWidth={1.8} />
-      )}
-    </button>
-  </header>
-  
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={() =>
+            setTheme((current) =>
+              current === "dark" ? "light" : "dark"
+            )
+          }
+          aria-label={
+            theme === "dark"
+              ? "Ativar modo claro"
+              : "Ativar modo escuro"
+          }
+          title={
+            theme === "dark"
+              ? "Ativar modo claro"
+              : "Ativar modo escuro"
+          }
+        >
+          {theme === "dark" ? (
+            <Sun size={20} strokeWidth={1.8} />
+          ) : (
+            <Moon size={20} strokeWidth={1.8} />
+          )}
+        </button>
+      </header>
+
       <main className="content">
         {activeTab === "home" && (
           <div className="home-page">
-
             {/* APRESENTAÇÃO */}
 
             <section className="home-hero">
               <div className="hero-topline">
-                <span className="hero-index">01 / YOUR FEELING STUDIO</span>
+                <span className="hero-index">
+                  01 / YOUR FEELING STUDIO
+                </span>
+
                 <span className="hero-status">
                   <span className="status-dot" />
                   FEITO PARA VOCÊ
@@ -280,24 +292,93 @@ async function handleShowMore() {
                   </a>
                 </div>
 
-                <div className="hero-art" aria-hidden="true">
-                  <div className="art-circle art-circle-one" />
-                  <div className="art-circle art-circle-two" />
-                  <div className="art-disc">
-                    <div className="disc-center">
-                      <Music2 size={27} />
-                    </div>
+                {/* CARROSSEL DE MÚSICAS */}
+
+                <div className="hero-carousel">
+                  <div
+                    className="hero-carousel-track"
+                    onMouseDown={(event) => {
+                      const track = event.currentTarget;
+
+                      track.dataset.dragging = "true";
+                      track.dataset.startX = String(event.pageX);
+                      track.dataset.scrollLeft = String(track.scrollLeft);
+
+                      event.preventDefault();
+                    }}
+                    onMouseMove={(event) => {
+                      const track = event.currentTarget;
+
+                      if (track.dataset.dragging !== "true") return;
+
+                      const startX = Number(track.dataset.startX);
+                      const scrollLeft = Number(track.dataset.scrollLeft);
+
+                      track.scrollLeft =
+                        scrollLeft - (event.pageX - startX);
+                    }}
+                    onMouseUp={(event) => {
+                      event.currentTarget.dataset.dragging = "false";
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.dataset.dragging = "false";
+                    }}
+                  >
+                    {result?.songs?.length ? (
+                      result.songs.slice(0, 6).map((song, index) => (
+                        <article
+                          className="hero-music-card"
+                          key={song.id}
+                        >
+                          <img
+                            src={song.cover}
+                            alt={`Capa de ${song.title}`}
+                            className="hero-music-cover"
+                            loading="lazy"
+                            draggable={false}
+                          />
+
+                          <div className="hero-music-overlay">
+                            <span className="hero-music-number">
+                              TRACK {String(index + 1).padStart(2, "0")}
+                            </span>
+
+                            <div>
+                              <h3>{song.title}</h3>
+                              <p>{song.artist}</p>
+                            </div>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <article className="hero-music-card hero-music-placeholder">
+                        <div className="placeholder-content">
+                          <Disc3 size={48} />
+
+                          <span>
+                            YOUR NEXT
+                            <br />
+                            FAVORITE SONG
+                          </span>
+
+                          <p>
+                            Escolha como você quer se sentir e descubra
+                            novos sons.
+                          </p>
+                        </div>
+                      </article>
+                    )}
                   </div>
-                  <span className="art-star star-one">𝄞</span>
-                  <span className="art-star star-two">♪</span>
-                  <span className="art-note">♫</span>
-                  <span className="art-caption">SOUNDTRACK<br/>OF YOURSELF</span>
+
+                  <span className="hero-carousel-hint">
+                    ARRASTE PARA DESCOBRIR <span>⟶</span>
+                  </span>
                 </div>
               </div>
 
               <div className="hero-bottomline">
                 <span>ENCONTRE O SOM DO SEU MOMENTO</span>
-                <span> 2026 · HARMOODY</span>
+                <span>2026 · HARMOODY</span>
               </div>
             </section>
 
@@ -312,6 +393,7 @@ async function handleShowMore() {
               <div className="mood-intro">
                 <div>
                   <span className="eyebrow">UM POUCO SOBRE VOCÊ</span>
+
                   <h2>
                     Como você quer
                     <br />
@@ -351,7 +433,9 @@ async function handleShowMore() {
                 <div className="empty-icon">
                   <Loader2 size={22} className="spin" />
                 </div>
+
                 <h3>Preparando sua trilha...</h3>
+
                 <p>
                   Estamos procurando músicas que combinem com o
                   sentimento que você escolheu.
@@ -371,6 +455,7 @@ async function handleShowMore() {
                 <section className="result-heading">
                   <div>
                     <span className="eyebrow">SEU CLIMA ESCOLHIDO</span>
+
                     <h2>
                       {currentMood.emoji} {currentMood.label}
                     </h2>
@@ -481,6 +566,7 @@ async function handleShowMore() {
                       <span className="eyebrow">
                         SELEÇÃO ESPECIALMENTE PARA VOCÊ
                       </span>
+
                       <h2>Seu mix emocional</h2>
                     </div>
 
@@ -528,13 +614,14 @@ async function handleShowMore() {
 
                 <div>
                   <span className="eyebrow">UM CONVITE</span>
+
                   <h3>Deixe a música encontrar você.</h3>
+
                   <p>
                     Escolha um dos quatro climas e descubra uma seleção
                     musical pensada para o que você deseja sentir!
                   </p>
                 </div>
-
               </section>
             )}
 
@@ -547,254 +634,246 @@ async function handleShowMore() {
 
         {/* HISTÓRICO */}
 
-        
-
-{activeTab === "history" && (
-  <section className="history-page">
-
-    <header className="history-intro">
-      <div className="history-heading">
-        <span className="eyebrow">
-          HARMOODY / SEU ARQUIVO PESSOAL
-        </span>
-
-        <h1>Fragmentos <em>de você.</em></h1>
-
-        <p>
-          Cada escolha guarda um pouco do que você sentiu
-          e daquilo que quis encontrar na música.
-        </p>
-      </div>
-
-      <div className="history-total">
-        <strong>{String(history.length).padStart(2, "0")}</strong>
-        <span>REGISTROS</span>
-      </div>
-    </header>
-
-    {selectedHistoryItem ? (
-      
-<div className="history-detail">
-  <button
-    type="button"
-    onClick={() => {
-      setSelectedHistoryItem(null);
-      setHistoryNote("");
-    }}
-  >
-    Voltar ao histórico
-  </button>
-
-  {(() => {
-    const mood = moods.find(
-      (m) => m.id === selectedHistoryItem.mood
-    );
-
-    const date = new Date(selectedHistoryItem.createdAt);
-
-    if (!mood) return null;
-
-    return (
-      <div>
-        <span>REGISTRO MUSICAL</span>
-
-        <h2>{mood.label}</h2>
-
-        <p>
-          {date.toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-
-<section className="history-songs">
-  <h3>MINHA TRILHA DO MOMENTO</h3>
-
-  {selectedHistoryItem.songs?.length ? (
-    <div className="history-songs-list">
-      {selectedHistoryItem.songs.map((song, index) => (
-        <div
-          className="history-song-item"
-          key={`${song.id}-${index}`}
-        >
-          {song.cover ? (
-            <img
-              src={song.cover}
-              alt={`Capa de ${song.title}`}
-            />
-          ) : (
-            <div className="history-song-placeholder">♪</div>
-          )}
-
-          <div className="history-song-info">
-            <strong>{song.title}</strong>
-            <span>{song.artist}</span>
-          </div>
-
-          {song.spotifyUrl && (
-            <a
-              href={song.spotifyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Abrir ${song.title} no Spotify`}
-            >
-              𝄞
-            </a>
-          )}
-        </div>
-      ))}
-    </div>
-  ) : (
-    <p>
-      Este registro não possui músicas salvas.
-      Os registros anteriores à atualização não guardavam essa informação.
-    </p>
-  )}
-</section>
-
-
-        <p>
-          {date.toLocaleTimeString("pt-BR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
-
-        <div className="history-note">
-          <label htmlFor="history-note-input">
-            MINHAS ANOTAÇÕES
-          </label>
-
-          <textarea
-            id="history-note-input"
-            value={historyNote}
-            onChange={(e) => setHistoryNote(e.target.value)}
-            placeholder="O que estava passando pela sua cabeça naquele momento?"
-            rows={5}
-          />
-
-          <button
-            type="button"
-            onClick={handleSaveHistoryNote}
-          >
-            Salvar anotação
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            chooseMood(selectedHistoryItem.mood);
-            setSelectedHistoryItem(null);
-          }}
-        >
-          Explorar músicas deste clima
-        </button>
-
-        <button
-          type="button"
-          onClick={handleDeleteHistoryItem}
-        >
-          Excluir registro
-        </button>
-      </div>
-    );
-  })()}
-</div>
-
-    ) : history.length === 0 ? (
-
-      <div className="history-empty">
-        <span className="history-empty-mark">H.</span>
-        <span className="eyebrow">PÁGINA EM BRANCO</span>
-        <h3>Sua história começa aqui.</h3>
-        <p>
-          Escolha um clima na página inicial.
-          Seus registros aparecerão neste espaço.
-        </p>
-      </div>
-
-    ) : (
-
-      <>
-        <div className="history-archive-label">
-          <span>01 / MEMÓRIAS MUSICAIS</span>
-          <span>REGISTROS RECENTES</span>
-        </div>
-
-        <div className="history-mosaic">
-          {history.map((item, index) => {
-            const mood = moods.find((m) => m.id === item.mood);
-
-            if (!mood) return null;
-
-            const date = new Date(item.createdAt);
-
-            return (
-              <button
-                key={item.id}
-                className={`history-card history-card-${index % 4}`}
-                onClick={() => openHistoryItem(item)}
-              >
-                <div className="history-card-top">
-                  <span>
-                    NO. {String(index + 1).padStart(2, "0")}
-                  </span>
-
-                  <span>
-                    {date.toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-
-                <div className="history-card-art">
-                  <span>{mood.emoji}</span>
-                  <div className="history-card-orbit" />
-                </div>
-
-                <div className="history-card-bottom">
-                  <div>
-                    <span className="history-card-caption">
-                      CLIMA ESCOLHIDO
-                    </span>
-
-                    <strong>{mood.label}</strong>
-                  </div>
-
-                  <span className="history-card-time">
-                    {date.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-
-                <span className="history-card-open">
-                  ABRIR REGISTRO!
+        {activeTab === "history" && (
+          <section className="history-page">
+            <header className="history-intro">
+              <div className="history-heading">
+                <span className="eyebrow">
+                  HARMOODY / SEU ARQUIVO PESSOAL
                 </span>
-              </button>
-            );
-          })}
-        </div>
-      </>
-    )}
 
-  </section>
-)}
+                <h1>
+                  Fragmentos <em>de você.</em>
+                </h1>
 
+                <p>
+                  Cada escolha guarda um pouco do que você sentiu
+                  e daquilo que quis encontrar na música.
+                </p>
+              </div>
 
+              <div className="history-total">
+                <strong>{String(history.length).padStart(2, "0")}</strong>
+                <span>REGISTROS</span>
+              </div>
+            </header>
 
+            {selectedHistoryItem ? (
+              <div className="history-detail">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedHistoryItem(null);
+                    setHistoryNote("");
+                  }}
+                >
+                  Voltar ao histórico
+                </button>
 
+                {(() => {
+                  const mood = moods.find(
+                    (m) => m.id === selectedHistoryItem.mood
+                  );
+
+                  const date = new Date(selectedHistoryItem.createdAt);
+
+                  if (!mood) return null;
+
+                  return (
+                    <div>
+                      <span>REGISTRO MUSICAL</span>
+
+                      <h2>{mood.label}</h2>
+
+                      <p>
+                        {date.toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+
+                      <section className="history-songs">
+                        <h3>MINHA TRILHA DO MOMENTO</h3>
+
+                        {selectedHistoryItem.songs?.length ? (
+                          <div className="history-songs-list">
+                            {selectedHistoryItem.songs.map((song, index) => (
+                              <div
+                                className="history-song-item"
+                                key={`${song.id}-${index}`}
+                              >
+                                {song.cover ? (
+                                  <img
+                                    src={song.cover}
+                                    alt={`Capa de ${song.title}`}
+                                  />
+                                ) : (
+                                  <div className="history-song-placeholder">
+                                    ♪
+                                  </div>
+                                )}
+
+                                <div className="history-song-info">
+                                  <strong>{song.title}</strong>
+                                  <span>{song.artist}</span>
+                                </div>
+
+                                {song.spotifyUrl && (
+                                  <a
+                                    href={song.spotifyUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={`Abrir ${song.title} no Spotify`}
+                                  >
+                                    𝄞
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>
+                            Este registro não possui músicas salvas.
+                            Os registros anteriores à atualização não
+                            guardavam essa informação.
+                          </p>
+                        )}
+                      </section>
+
+                      <p>
+                        {date.toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+
+                      <div className="history-note">
+                        <label htmlFor="history-note-input">
+                          MINHAS ANOTAÇÕES
+                        </label>
+
+                        <textarea
+                          id="history-note-input"
+                          value={historyNote}
+                          onChange={(event) =>
+                            setHistoryNote(event.target.value)
+                          }
+                          placeholder="O que estava passando pela sua cabeça naquele momento?"
+                          rows={5}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={handleSaveHistoryNote}
+                        >
+                          Salvar anotação
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          chooseMood(selectedHistoryItem.mood);
+                          setSelectedHistoryItem(null);
+                        }}
+                      >
+                        Explorar músicas deste clima
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDeleteHistoryItem}
+                      >
+                        Excluir registro
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : history.length === 0 ? (
+              <div className="history-empty">
+                <span className="history-empty-mark">H.</span>
+                <span className="eyebrow">PÁGINA EM BRANCO</span>
+                <h3>Sua história começa aqui.</h3>
+                <p>
+                  Escolha um clima na página inicial.
+                  Seus registros aparecerão neste espaço.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="history-archive-label">
+                  <span>01 / MEMÓRIAS MUSICAIS</span>
+                  <span>REGISTROS RECENTES</span>
+                </div>
+
+                <div className="history-mosaic">
+                  {history.map((item, index) => {
+                    const mood = moods.find((m) => m.id === item.mood);
+
+                    if (!mood) return null;
+
+                    const date = new Date(item.createdAt);
+
+                    return (
+                      <button
+                        key={item.id}
+                        className={`history-card history-card-${index % 4}`}
+                        onClick={() => openHistoryItem(item)}
+                      >
+                        <div className="history-card-top">
+                          <span>
+                            NO. {String(index + 1).padStart(2, "0")}
+                          </span>
+
+                          <span>
+                            {date.toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+
+                        <div className="history-card-art">
+                          <span>{mood.emoji}</span>
+                          <div className="history-card-orbit" />
+                        </div>
+
+                        <div className="history-card-bottom">
+                          <div>
+                            <span className="history-card-caption">
+                              CLIMA ESCOLHIDO
+                            </span>
+
+                            <strong>{mood.label}</strong>
+                          </div>
+
+                          <span className="history-card-time">
+                            {date.toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+
+                        <span className="history-card-open">
+                          ABRIR REGISTRO!
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </section>
+        )}
 
         {/* PERFIL */}
 
         {activeTab === "profile" && (
           <section className="profile-page">
-
             <div className="profile-heading">
               <span className="profile-kicker">
                 HARMOODY / SEU ESPAÇO
@@ -855,14 +934,11 @@ async function handleShowMore() {
               <span>HARMOODY © 2026</span>
               <span>MÚSICA PARA O QUE VOCÊ QUER SENTIR</span>
             </footer>
-
           </section>
         )}
-
       </main>
 
       <BottomNav active={activeTab} onChange={setActiveTab} />
-
     </div>
   );
 }

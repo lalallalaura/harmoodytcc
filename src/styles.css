@@ -2949,3 +2949,222 @@ body:has(.app-shell[data-theme="light"]) {
   background: #A47799;
   border-color: #A47799;
 }
+
+/* ==========================================
+   HERO — MUSIC DISCOVERY CAROUSEL
+========================================== */
+
+.hero-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  min-height: 390px;
+  padding: 38px 0 32px;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 36%;
+  width: auto;
+}
+
+.hero-copy h1 {
+  font-size: clamp(36px, 5vw, 54px);
+}
+
+.hero-description {
+  max-width: 290px;
+  font-size: 12px;
+}
+
+.hero-carousel {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.hero-carousel-track {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 2px 18px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hero-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-carousel-track:active {
+  cursor: grabbing;
+}
+
+.hero-music-card {
+  position: relative;
+  flex: 0 0 215px;
+  height: 310px;
+  overflow: hidden;
+  border: 1px solid rgba(197,169,232,.2);
+  border-radius: 5px 5px 22px 5px;
+  background: var(--plum);
+  scroll-snap-align: start;
+  transition: transform .3s ease, border-color .3s ease;
+}
+
+.hero-music-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--pink);
+}
+
+.hero-music-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-music-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 15px;
+  color: white;
+  background: linear-gradient(
+    to bottom,
+    rgba(19,13,25,.12) 0%,
+    transparent 35%,
+    rgba(19,13,25,.9) 100%
+  );
+}
+
+.hero-music-number {
+  align-self: flex-start;
+  padding: 6px 8px;
+  background: rgba(19,13,25,.65);
+  border: 1px solid rgba(255,255,255,.2);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .1em;
+}
+
+.hero-music-overlay h3 {
+  margin: 0 0 5px;
+  color: white;
+  font-family: var(--sans);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.hero-music-overlay p {
+  margin: 0;
+  color: rgba(255,255,255,.75);
+  font-size: 11px;
+}
+
+.hero-music-placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 70% 20%, rgba(197,169,232,.25), transparent 40%),
+    linear-gradient(145deg, #392441, #1b1221);
+}
+
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  text-align: center;
+  color: var(--lavender);
+}
+
+.placeholder-content > span {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: .12em;
+  color: var(--paper);
+}
+
+.placeholder-content p {
+  max-width: 160px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.hero-carousel-hint {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 9px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .1em;
+}
+
+.hero-carousel-hint span {
+  color: var(--pink);
+  font-size: 15px;
+}
+
+/* HERO RESPONSIVO */
+
+@media (max-width: 700px) {
+  .hero-main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 30px;
+    padding: 32px 0 24px;
+  }
+
+  .hero-copy {
+    flex: auto;
+    width: 100%;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(42px, 10vw, 58px);
+  }
+
+  .hero-description {
+    max-width: 360px;
+  }
+
+  .hero-carousel {
+    width: 100%;
+  }
+
+  .hero-music-card {
+    flex-basis: 205px;
+    height: 285px;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-music-card {
+    flex-basis: 185px;
+    height: 260px;
+  }
+}
