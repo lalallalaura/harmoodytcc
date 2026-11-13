@@ -15,13 +15,16 @@ export interface FeedbackItem {
 const KEY = "harmoody_feedback";
 const MAX_ITEMS = 300;
 
+function normalize(value: string): string {
+  return value.trim().toLowerCase();
+}
+
 export function getFeedback(): FeedbackItem[] {
   try {
     const stored = localStorage.getItem(KEY);
     if (!stored) return [];
 
     const parsed = JSON.parse(stored);
-
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
@@ -36,7 +39,6 @@ export function saveFeedback(
 ) {
   const list = getFeedback();
 
-  // Uma avaliação por música em cada mood.
   const filtered = list.filter(
     (item) => !(item.songId === song.id && item.mood === mood)
   );
@@ -45,9 +47,7 @@ export function saveFeedback(
     songId: song.id,
     artist: song.artist,
     genres: [...new Set(
-      (genres ?? song.genres ?? []).map((genre) =>
-        genre.trim().toLowerCase()
-      )
+      (genres ?? song.genres ?? []).map(normalize)
     )],
     mood,
     value,
@@ -79,13 +79,19 @@ export function getFeedbackForSong(
   return item?.value ?? null;
 }
 
-export function getArtistFeedbackScore(artistName: string): number {
-  const normalizedArtist = artistName.trim().toLowerCase();
+/**
+ * Calcula a avaliação de um artista.
+ * Quando um mood é informado, considera somente avaliações daquele mood.
+ */
+export function getArtistFeedbackScore(
+  artistName: string,
+  mood?: MoodId
+): number {
+  const normalizedArtist = normalize(artistName);
 
   const score = getFeedback().reduce((total, item) => {
-    if (item.artist.trim().toLowerCase() !== normalizedArtist) {
-      return total;
-    }
+    if (normalize(item.artist) !== normalizedArtist) return total;
+    if (mood && item.mood !== mood) return total;
 
     return total + (item.value === "like" ? 1 : -1);
   }, 0);
@@ -93,26 +99,40 @@ export function getArtistFeedbackScore(artistName: string): number {
   return Math.max(-3, Math.min(3, score));
 }
 
-export function getDislikedArtists(): Set<string> {
+export function getDislikedArtists(mood?: MoodId): Set<string> {
   return new Set(
     getFeedback()
-      .filter((item) => item.value === "dislike")
-      .map((item) => item.artist.trim().toLowerCase())
+      .filter(
+        (item) =>
+          item.value === "dislike" &&
+          (!mood || item.mood === mood)
+      )
+      .map((item) => normalize(item.artist))
   );
 }
 
-export function hasFeedbackSignal(): boolean {
-  return getFeedback().length > 0;
+export function hasFeedbackSignal(mood?: MoodId): boolean {
+  return mood
+    ? getFeedback().some((item) => item.mood === mood)
+    : getFeedback().length > 0;
 }
 
-export function getPreferredGenresFromFeedback(): Map<string, number> {
+/**
+ * Soma os likes e dislikes dos gêneros.
+ * Quando um mood é informado, considera somente as avaliações daquele mood.
+ */
+export function getPreferredGenresFromFeedback(
+  mood?: MoodId
+): Map<string, number> {
   const scores = new Map<string, number>();
 
   for (const item of getFeedback()) {
+    if (mood && item.mood !== mood) continue;
+
     const weight = item.value === "like" ? 1 : -1;
 
     for (const genre of item.genres ?? []) {
-      const normalizedGenre = genre.trim().toLowerCase();
+      const normalizedGenre = normalize(genre);
       if (!normalizedGenre) continue;
 
       scores.set(
