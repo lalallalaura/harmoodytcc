@@ -196,10 +196,10 @@ export default function App() {
                       <Music2 size={27} />
                     </div>
                   </div>
-                  <span className="art-star star-one">✳</span>
-                  <span className="art-star star-two">✳</span>
+                  <span className="art-star star-one">𝄞</span>
+                  <span className="art-star star-two">♪</span>
                   <span className="art-note">♫</span>
-                  <span className="art-caption">SOUNDTRACK<br />OF YOURSELF</span>
+                  <span className="art-caption">SOUNDTRACK<br/>OF YOURSELF</span>
                 </div>
               </div>
 
