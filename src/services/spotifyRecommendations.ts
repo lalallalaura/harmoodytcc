@@ -107,6 +107,8 @@ function isGenericTrack(track: SpotifyTrack): boolean {
     "romantic r b",
     "love songs",
     "love song",
+    "Neo",
+    "Neo Soul",
     "POP",
     "HAPPY ",
     "soul love songs",
