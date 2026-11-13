@@ -29,6 +29,7 @@ import {
   saveHistory,
   updateHistoryNote,
   deleteHistory,
+  type HistoryItem,
 } from "./services/history";
 
 type PlaylistState =
