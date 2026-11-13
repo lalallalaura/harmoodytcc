@@ -68,8 +68,8 @@ const EXPLORATION_RATIO = 0.3;
 const MAX_TASTE_QUERIES = 3;
 
 // O clima escolhido sempre tem prioridade sobre o gosto pessoal.
-const MOOD_WEIGHT = 0.8;
-const TASTE_WEIGHT = 0.2;
+const MOOD_WEIGHT = 0.75;
+const TASTE_WEIGHT = 0.25;
 
 function distance(a: number, b: number) {
   return Math.abs(a - b);
@@ -82,6 +82,7 @@ function normalize(value: string) {
 function normalizeKey(track: SpotifyTrack): string {
   return `${normalize(track.title)}|${normalize(track.artist)}`;
 }
+
 function isGenericTrack(track: SpotifyTrack): boolean {
   const title = normalize(track.title)
     .replace(/[^\p{L}\p{N}\s]/gu, "")
@@ -122,8 +123,11 @@ function isGenericTrack(track: SpotifyTrack): boolean {
     "indie folk happy",
   ];
 
-  return genericTitles.includes(title);
+  return genericTitles.some(
+    (genericTitle) => normalize(genericTitle) === title
+  );
 }
+
 interface TasteProfile {
   favoriteArtistIds: Set<string>;
   favoriteArtistNames: Set<string>;
@@ -145,9 +149,11 @@ function getFeedbackSignature(): string {
     .map((item) =>
       [
         item.songId,
+        item.mood,
         item.value,
         normalize(item.artist),
         [...(item.genres ?? [])].map(normalize).sort().join(","),
+        item.createdAt,
       ].join(":")
     )
     .sort()
@@ -176,10 +182,20 @@ async function buildTasteProfile(): Promise<TasteProfile> {
     fetchUserSavedTracks(10),
   ]);
 
-  const historyTracks: SpotifyTrack[] = [
+  const allHistoryTracks: SpotifyTrack[] = [
     ...(topResult.status === "fulfilled" ? topResult.value : []),
     ...(savedResult.status === "fulfilled" ? savedResult.value : []),
   ];
+
+  // Evita contar duas vezes a mesma faixa.
+  const seenHistoryIds = new Set<string>();
+
+  const historyTracks = allHistoryTracks.filter((track) => {
+    if (seenHistoryIds.has(track.id)) return false;
+
+    seenHistoryIds.add(track.id);
+    return true;
+  });
 
   for (const track of historyTracks) {
     favoriteArtistNames.add(normalize(track.artist));
@@ -215,9 +231,14 @@ async function buildTasteProfile(): Promise<TasteProfile> {
   // Likes aumentam o peso dos gêneros; dislikes diminuem.
   const feedbackGenres = getPreferredGenresFromFeedback();
 
-  for (const [genre, delta] of Object.entries(feedbackGenres)) {
+  for (const [genre, delta] of feedbackGenres) {
     const key = normalize(genre);
-    genreCounts.set(key, (genreCounts.get(key) ?? 0) + delta);
+
+    // O feedback explícito tem peso maior que o histórico do Spotify.
+    genreCounts.set(
+      key,
+      (genreCounts.get(key) ?? 0) + delta * 3
+    );
   }
 
   // Normaliza os pesos positivos e negativos entre -1 e 1.
@@ -255,7 +276,10 @@ async function buildTasteProfile(): Promise<TasteProfile> {
   return profile;
 }
 
-function isFamiliarArtist(track: SpotifyTrack, taste: TasteProfile): boolean {
+function isFamiliarArtist(
+  track: SpotifyTrack,
+  taste: TasteProfile
+): boolean {
   return (
     track.artistIds.some((id) => taste.favoriteArtistIds.has(id)) ||
     taste.favoriteArtistNames.has(normalize(track.artist))
@@ -273,10 +297,12 @@ function tasteScoreFor(
 ): number {
   let score = 0.5;
 
+  // Familiaridade com artistas do histórico do Spotify.
   if (isFamiliarArtist(track, taste)) {
-    score += 0.2;
+    score += 0.1;
   }
 
+  // Compatibilidade com os gêneros preferidos.
   if (genres.length > 0 && taste.genreWeights.size > 0) {
     const uniqueGenres = [...new Set(genres.map(normalize))];
 
@@ -286,13 +312,14 @@ function tasteScoreFor(
         0
       ) / uniqueGenres.length;
 
-    score += genreScore * 0.2;
+    score += genreScore * 0.15;
   }
 
+  // Avaliações explícitas do usuário.
   const artistFeedback = getArtistFeedbackScore(track.artist);
-  score += artistFeedback * 0.1;
+  score += artistFeedback * 0.12;
 
-  // Um dislike reduz a preferência pelo artista, mas não o bloqueia.
+  // Penalidade adicional para artistas rejeitados.
   if (taste.dislikedArtistNames.has(normalize(track.artist))) {
     score -= 0.15;
   }
@@ -318,7 +345,6 @@ function buildTasteQueries(
     (genre) => `${genre} ${MOOD_KEYWORD[moodId]}`
   );
 }
-
 
 async function collectCandidates(
   queries: string[],
@@ -362,8 +388,6 @@ async function collectCandidates(
 
   return candidates;
 }
-
-
 
 export async function recommendSongsFromSpotify(
   moodId: MoodId,
