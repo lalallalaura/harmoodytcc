@@ -2681,3 +2681,34 @@ body:has(.app-shell[data-theme="light"]) {
     border-color .25s ease,
     color .25s ease;
 }
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid rgba(197, 169, 232, 0.25);
+  border-radius: 50%;
+  background: rgba(197, 169, 232, 0.08);
+  color: var(--lavender);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: rgba(197, 169, 232, 0.18);
+  border-color: var(--lavender);
+  transform: rotate(12deg);
+}
+
+.app-shell[data-theme="light"] .theme-toggle {
+  color: #79568B;
+  border-color: rgba(121, 86, 139, 0.25);
+  background: rgba(121, 86, 139, 0.08);
+}
+
+.app-shell[data-theme="light"] .theme-toggle:hover {
+  background: rgba(121, 86, 139, 0.16);
+}

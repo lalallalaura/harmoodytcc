@@ -60,15 +60,14 @@ export default function App() {
   const [playlistState, setPlaylistState] = useState<PlaylistState>({
     status: "idle",
   });
-
+  useEffect(() => {
+  localStorage.setItem("harmoody_theme", theme);
+}, [theme]);
   useEffect(() => {
     if (!selectedMood) {
       setResult(null);
       return;
     }
-    useEffect(() => {
-  localStorage.setItem("harmoody_theme", theme);
-}, [theme]);
 
     let cancelled = false;
     setLoading(true);
@@ -186,38 +185,41 @@ function handleDeleteHistoryItem() {
 
   return (
 <div className="app-shell" data-theme={theme}>
-        <header className="topbar">
-        <div className="topbar-brand">
-          <span className="brand">HARMOODY<span className="brand-period">.</span></span>
-          <p>música para o que você quer sentir</p>
-        </div>
+  <header className="topbar">
+    <div className="topbar-brand">
+      <span className="brand">
+        HARMOODY<span className="brand-period">.</span>
+      </span>
+      <p>música para o que você quer sentir</p>
+    </div>
 
-        <div className="brand-mark">
-          <Music2 size={23} strokeWidth={1.8} />
-        </div>
-      </header>
-      <button
-  type="button"
-  className="theme-toggle"
-  onClick={() =>
-    setTheme((current) =>
-      current === "dark" ? "light" : "dark"
-    )
-  }
-  aria-label={
-    theme === "dark"
-      ? "Ativar modo claro"
-      : "Ativar modo escuro"
-  }
-  title={theme === "dark" ? "Modo claro" : "Modo escuro"}
->
-  {theme === "dark" ? (
-    <Sun size={18} />
-  ) : (
-    <Moon size={18} />
-  )}
-</button>
-
+    <button
+      type="button"
+      className="theme-toggle"
+      onClick={() =>
+        setTheme((current) =>
+          current === "dark" ? "light" : "dark"
+        )
+      }
+      aria-label={
+        theme === "dark"
+          ? "Ativar modo claro"
+          : "Ativar modo escuro"
+      }
+      title={
+        theme === "dark"
+          ? "Ativar modo claro"
+          : "Ativar modo escuro"
+      }
+    >
+      {theme === "dark" ? (
+        <Sun size={20} strokeWidth={1.8} />
+      ) : (
+        <Moon size={20} strokeWidth={1.8} />
+      )}
+    </button>
+  </header>
+  
       <main className="content">
         {activeTab === "home" && (
           <div className="home-page">
