@@ -1139,7 +1139,6 @@ export default function App() {
                 <strong>Explorar meu Replay</strong>
                 <small>Reveja suas músicas, artistas e sessões.</small>
               </div>
-              <span aria-hidden="true">↗</span>
             </button>
 
             <section className="profile-spotify">
