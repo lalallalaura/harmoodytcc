@@ -3,7 +3,7 @@ export type MoodId = "energized" | "calm" | "romantic" | "light";
 export interface Mood {
   id: MoodId;
   label: string;
-  emoji: string;
+  emoji?: string;
   description: string;
   energy: number;
   valence: number;
