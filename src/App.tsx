@@ -1038,62 +1038,115 @@ export default function App() {
         {/* PERFIL */}
 
         {activeTab === "profile" && (
-          <section className="profile-page">
-            <div className="profile-heading">
-              <span className="profile-kicker">
-                HARMOODY / SEU ESPAÇO
-              </span>
-
-              <h1>
-                Música que
-                <br />
-                <em>conversa com você.</em>
-              </h1>
-
-              <p>
-                Descubra como a música pode acompanhar seus sentimentos,
-                respeitar seu momento e ajudar você a encontrar novas sensações.
-              </p>
-            </div>
-
-            <div className="profile-about">
-              <div className="profile-about-top">
-                <span>01 / SOBRE O PROJETO</span>
-                <span>HARMOODY</span>
-              </div>
-
-              <div className="profile-about-content">
-                <span className="profile-letter">H.</span>
-
+          <section className="profile-page profile-music-page">
+            <header className="profile-music-header">
+              <span className="profile-kicker">HARMOODY / SEU ESPAÇO</span>
+              <div className="profile-music-title">
+                <div className="profile-music-avatar"><Disc3 size={32} /></div>
                 <div>
-                  <h2>Seu bem-estar através da música.</h2>
-
-                  <p>
-                    O Harmoody cruza características musicais, como energia,
-                    andamento e valência das letras, para encontrar faixas
-                    compatíveis com o clima que você deseja alcançar.
-                  </p>
+                  <h1>Meu <em>universo.</em></h1>
+                  <p>Suas descobertas, seus moods e sua história musical.</p>
                 </div>
               </div>
+            </header>
 
-              <div className="profile-about-footer">
-                <span>EMOÇÃO</span>
-                <span>ENERGIA</span>
-                <span>MÚSICA</span>
-              </div>
+            <div className="profile-music-stats">
+              <div><strong>{history.length}</strong><span>Sessões</span></div>
+              <div><strong>{history.reduce((total, item) => total + (item.songs?.length ?? 0), 0)}</strong><span>Recomendações</span></div>
+              <div><strong>{new Set(history.map((item) => item.mood)).size}</strong><span>Moods explorados</span></div>
             </div>
 
-            <div className="profile-spotify">
+            <section className="profile-music-panel">
+              <div className="profile-music-panel-heading">
+                <div>
+                  <span className="profile-kicker">SUA IDENTIDADE MUSICAL</span>
+                  <h2>Seu mood mais escolhido</h2>
+                </div>
+              </div>
+              {history.length ? (() => {
+                const favorite = [...moods].sort(
+                  (a, b) =>
+                    history.filter((item) => item.mood === b.id).length -
+                    history.filter((item) => item.mood === a.id).length
+                )[0];
+                const count = history.filter((item) => item.mood === favorite.id).length;
+                return (
+                  <div className="profile-favorite-mood">
+                    <Disc3 size={26} />
+                    <div><strong>{favorite.label}</strong><span>{count} {count === 1 ? "sessão registrada" : "sessões registradas"}</span></div>
+                  </div>
+                );
+              })() : (
+                <p className="profile-music-empty">Escolha um mood na Home para começar seu universo musical.</p>
+              )}
+            </section>
+
+            <section className="profile-music-panel">
+              <div className="profile-music-panel-heading">
+                <div>
+                  <span className="profile-kicker">SUA COLEÇÃO</span>
+                  <h2>Artistas que apareceram por aqui</h2>
+                </div>
+              </div>
+              {(() => {
+                const artists = Object.values(
+                  history.flatMap((item) => item.songs ?? []).reduce<
+                    Record<string, { name: string; count: number; cover: string }>
+                  >((acc, song) => {
+                    const name = song.artist || "Artista desconhecido";
+                    const key = name.toLocaleLowerCase("pt-BR");
+                    if (!acc[key]) acc[key] = { name, count: 0, cover: song.cover };
+                    acc[key].count += 1;
+                    if (!acc[key].cover && song.cover) acc[key].cover = song.cover;
+                    return acc;
+                  }, {})
+                ).sort((a, b) => b.count - a.count).slice(0, 4);
+
+                return artists.length ? (
+                  <div className="profile-artist-list">
+                    {artists.map((artist, index) => (
+                      <div className="profile-artist-row" key={artist.name}>
+                        <span className="profile-artist-rank">{String(index + 1).padStart(2, "0")}</span>
+                        {artist.cover ? <img src={artist.cover} alt="" loading="lazy" /> : <div className="profile-artist-cover-fallback"><Disc3 size={18} /></div>}
+                        <div><strong>{artist.name}</strong><span>{artist.count} {artist.count === 1 ? "recomendação" : "recomendações"}</span></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="profile-music-empty">Os artistas das suas recomendações vão aparecer aqui.</p>
+                );
+              })()}
+            </section>
+
+            <button
+              type="button"
+              className="profile-replay-link"
+              onClick={() => {
+                setSelectedHistoryItem(null);
+                setActiveTab("history");
+              }}
+            >
+              <div>
+                <span className="profile-kicker">SUA RETROSPECTIVA</span>
+                <strong>Explorar meu Replay</strong>
+                <small>Reveja suas músicas, artistas e sessões.</small>
+              </div>
+              <span aria-hidden="true">↗</span>
+            </button>
+
+            <section className="profile-spotify">
               <div className="profile-section-heading">
-                <span>02 / SUA CONEXÃO</span>
-                <h2>Seu universo musical.</h2>
-                <p>
-                  Conecte sua conta para descobrir recomendações musicais.
-                </p>
+                <span>SPOTIFY / CONEXÃO</span>
+                <h2>Sua conta musical.</h2>
+                <p>Gerencie sua conexão com o Spotify.</p>
               </div>
-
               <SpotifyConnect />
-            </div>
+            </section>
+
+            <details className="profile-about-details">
+              <summary>Sobre o Harmoody <span aria-hidden="true">+</span></summary>
+              <p>O Harmoody combina características musicais e preferências para recomendar faixas compatíveis com o clima que você deseja alcançar.</p>
+            </details>
 
             <footer className="profile-footer">
               <span>HARMOODY © 2026</span>
