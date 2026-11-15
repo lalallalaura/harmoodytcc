@@ -3,19 +3,7 @@ import { SpotifyTrack } from "../types";
 
 const API_BASE = "https://api.spotify.com/v1";
 
-// IMPORTANTE — sobre BPM/energia/valência:
-// Em 27/11/2024 o Spotify restringiu os endpoints "Audio Features",
-// "Audio Analysis", "Recommendations" e "Related Artists" para qualquer
-// app novo. Não existe forma oficial de pedir BPM/energia/valência ao
-// Spotify para um app novo como o Harmoody — por isso usamos uma
-// estimativa própria baseada em gênero (ver moodProfile.ts).
-//
-// IMPORTANTE — reforma de fevereiro de 2026:
-// O Spotify removeu vários endpoints e campos nessa data (ver
-// https://developer.spotify.com/documentation/web-api/references/changes/february-2026),
-// entre eles: GET /artists (busca em lote), o campo "popularity" da
-// faixa, POST /users/{id}/playlists e POST /playlists/{id}/tracks. Este
-// arquivo já reflete os endpoints atuais.
+
 
 class SpotifyApiError extends Error {
   code: string;

@@ -23,7 +23,8 @@ import {
   RecommendationResult,
 } from "./services/recommendations";
 import { createPlaylistFromRecommendations } from "./services/spotifyPlaylist";
-import { MoodId, Song } from "./types";
+import { getHeroTracks } from "./services/heroTracks";
+import { MoodId, Song, SpotifyTrack } from "./types";
 import {
   getHistory,
   saveHistory,
@@ -60,6 +61,7 @@ export default function App() {
   const [moreLoading, setMoreLoading] = useState(false);
   const [shownIds, setShownIds] = useState<string[]>([]);
   const [playlistSize, setPlaylistSize] = useState(12);
+  const [heroTracks, setHeroTracks] = useState<SpotifyTrack[]>([]);
   const replacingIds = useRef(new Set<string>());
   const shownIdsRef = useRef<string[]>([]);
   const resultRef = useRef<RecommendationResult | null>(null);
@@ -76,6 +78,20 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("harmoody_theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getHeroTracks()
+      .then((tracks) => {
+        if (!cancelled) setHeroTracks(tracks);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const generation = ++generationRef.current;
@@ -423,43 +439,47 @@ export default function App() {
                       event.currentTarget.dataset.dragging = "false";
                     }}
                   >
-                    {result?.songs?.length ? (
-                      result.songs.slice(0, 6).map((song, index) => (
-                        <article
-                          className="hero-music-card"
-                          key={song.id}
-                        >
-                          <img
-                            src={song.cover}
-                            alt={`Capa de ${song.title}`}
-                            className="hero-music-cover"
-                            loading="lazy"
-                            draggable={false}
-                          />
-
-                          <div className="hero-music-overlay">
-                            <span className="hero-music-number">
-                              TRACK {String(index + 1).padStart(2, "0")}
-                            </span>
-
-                            <div>
-                              <h3>{song.title}</h3>
-                              <p>{song.artist}</p>
+                    {(selectedMood ? result?.songs ?? [] : heroTracks).length > 0 ? (
+                      (selectedMood ? result?.songs ?? [] : heroTracks)
+                        .slice(0, 6)
+                        .map((song, index) => (
+                          <article
+                            className="hero-music-card"
+                            key={song.id}
+                            onClick={() => {
+                              if (song.spotifyUrl) {
+                                window.open(song.spotifyUrl, "_blank", "noopener,noreferrer");
+                              }
+                            }}
+                            style={{ cursor: song.spotifyUrl ? "pointer" : "default" }}
+                          >
+                            <img
+                              src={song.cover}
+                              alt={`Capa de ${song.title}`}
+                              className="hero-music-cover"
+                              loading="lazy"
+                              draggable={false}
+                            />
+                            <div className="hero-music-overlay">
+                              <span className="hero-music-number">
+                                TRACK {String(index + 1).padStart(2, "0")}
+                              </span>
+                              <div>
+                                <h3>{song.title}</h3>
+                                <p>{song.artist}</p>
+                              </div>
                             </div>
-                          </div>
-                        </article>
-                      ))
+                          </article>
+                        ))
                     ) : (
                       <article className="hero-music-card hero-music-placeholder">
                         <div className="placeholder-content">
                           <Disc3 size={48} />
-
                           <span>
-                            SUA PRÓXIMA 
+                            SUA PRÓXIMA
                             <br />
                             MÚSICA FAVORITA!
                           </span>
-
                           <p>
                             Escolha como você quer se sentir e descubra
                             novos sons.
