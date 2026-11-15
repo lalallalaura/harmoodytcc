@@ -881,14 +881,13 @@ export default function App() {
                                 </div>
 
                                 {song.spotifyUrl && (
-                                  <a
-                                    href={song.spotifyUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    aria-label={`Abrir ${song.title} no Spotify`}
+                                  <button
+                                    type="button"
+                                    onClick={() => setPlayingSong(song)}
+                                    aria-label={`Reproduzir ${song.title} no player`}
                                   >
                                     𝄞
-                                  </a>
+                                  </button>
                                 )}
                               </div>
                             ))}
@@ -1002,7 +1001,7 @@ export default function App() {
                             <span className="replay-song-rank">{index + 1}</span>
                             {song.cover ? <img src={song.cover} alt={`Capa de ${song.title}`} loading="lazy"/> : <div className="replay-song-fallback"><Disc3 size={20}/></div>}
                             <div className="replay-song-text"><strong>{song.title}</strong><span>{song.artist} · {count} {count === 1 ? "recomendação" : "recomendações"}</span></div>
-                            {song.spotifyUrl && <a href={song.spotifyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Ouvir ${song.title} no Spotify`}><Play size={17}/></a>}
+                            {song.spotifyUrl && <button type="button" onClick={() => setPlayingSong(song)} aria-label={`Reproduzir ${song.title} no player`}><Play size={17}/></button>}
                           </div>
                         ))}
                         {!replayTopSongs.length && <p className="replay-muted">Ainda não há músicas registradas.</p>}
