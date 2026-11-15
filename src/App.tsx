@@ -352,9 +352,9 @@ export default function App() {
                           <Disc3 size={48} />
 
                           <span>
-                            YOUR NEXT
+                            SUA PRÓXIMA 
                             <br />
-                            FAVORITE SONG
+                            MÚSICA FAVORITA!
                           </span>
 
                           <p>
