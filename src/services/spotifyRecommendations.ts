@@ -1,7 +1,6 @@
 import { moods } from "../data";
 import { MoodId, Song, SpotifyTrack } from "../types";
 import {
-  fetchArtistsGenres,
   fetchUserSavedTracks,
   fetchUserTopTracks,
   searchTracks,
@@ -95,11 +94,8 @@ async function getTaste(moodId: MoodId): Promise<Taste> {
   const feedback = getFeedback().filter((item) => item.mood === moodId);
   feedback.filter((item) => item.value === "like").forEach((item) => artists.add(norm(item.artist)));
   const counts = new Map<string, number>();
-  const genresByArtist = await fetchArtistsGenres([...artistIds].slice(0, 4)).catch(() => ({} as Record<string, string[]>));
-  Object.values(genresByArtist).forEach((genres) => genres.forEach((genre) => {
-    const key = norm(genre);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }));
+  // Evita GET /artists/{id}: esse endpoint estava recebendo 429 e
+  // bloqueando a recomendação. Mantemos gêneros aprendidos pelo feedback.
   for (const [genre, delta] of getPreferredGenresFromFeedback(moodId)) {
     const key = norm(genre);
     counts.set(key, (counts.get(key) ?? 0) + delta * 3);
@@ -110,13 +106,18 @@ async function getTaste(moodId: MoodId): Promise<Taste> {
 }
 
 function queriesFor(moodId: MoodId, taste: Taste): string[] {
-  // Dois filtros de gênero + dois termos comuns: não dependemos só de genre:.
-  const byGenre = shuffle(MOOD_GENRES[moodId]).slice(0, 2)
+  // Duas buscas por clima, uma ou duas por gênero e uma por artista favorito.
+  const favoriteGenre = [...taste.genres]
+    .filter(([, score]) => score > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 1)
+    .map(([genre]) => `genre:"${genre.replace(/"/g, "")}"`);
+  const byGenre = shuffle(MOOD_GENRES[moodId]).slice(0, favoriteGenre.length ? 1 : 2)
     .map((genre) => `genre:"${genre}"`);
   const byTerm = shuffle(MOOD_SEARCH_TERMS[moodId]).slice(0, 2);
   const artist = shuffle([...taste.artists]).slice(0, 1)
     .map((name) => `artist:"${name.replace(/"/g, "")}"`);
-  return [...new Set([...byGenre, ...byTerm, ...artist])];
+  return [...new Set([...byGenre, ...byTerm, ...favoriteGenre, ...artist])];
 }
 
 // Conta resultados realmente novos; excluir músicas vistas não pode enganar o fallback.
@@ -129,14 +130,36 @@ function availableCount(pool: SpotifyTrack[], excluded: Set<string>, moodId: Moo
   return unique.size;
 }
 
-async function searchMany(queries: string[], offset: number): Promise<SpotifyTrack[]> {
+type SearchHint = { term: string; kind: "genre" | "term" | "artist" };
+
+function hintForQuery(query: string): SearchHint {
+  if (query.startsWith('genre:"')) return { term: query.slice(7, -1), kind: "genre" };
+  if (query.startsWith('artist:"')) return { term: query.slice(8, -1), kind: "artist" };
+  return { term: query, kind: "term" };
+}
+
+async function searchMany(
+  queries: string[], offset: number, hints: Map<string, SearchHint>
+): Promise<SpotifyTrack[]> {
+  if (!queries.length) return [];
   const results = await Promise.allSettled(queries.map((query) => searchTracks(query, RESULTS_PER_QUERY, offset)));
   const ok = results.filter((r): r is PromiseFulfilledResult<SpotifyTrack[]> => r.status === "fulfilled");
   if (!ok.length) {
     const error = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
     throw error?.reason ?? new SpotifyApiError("spotify-error", "Não foi possível buscar músicas.");
   }
-  const tracks = ok.flatMap((result) => result.value).filter(valid);
+  const tracks: SpotifyTrack[] = [];
+  results.forEach((result, index) => {
+    if (result.status !== "fulfilled") return;
+    const hint = hintForQuery(queries[index]);
+    for (const track of result.value.filter(valid)) {
+      // Guardamos de qual pesquisa a faixa veio, não inventamos gêneros reais.
+      const previous = hints.get(track.id);
+      const rank = { genre: 3, term: 2, artist: 1 };
+      if (!previous || rank[hint.kind] > rank[previous.kind]) hints.set(track.id, hint);
+      tracks.push(track);
+    }
+  });
   if (!tracks.length) {
     const error = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
     if (error) throw error.reason;
@@ -174,8 +197,9 @@ export async function recommendSongsFromSpotify(
   // Começa em offset 0: deslocamentos aleatórios vazios eram uma das causas
   // de buscas sem músicas (especialmente para gêneros pouco populares).
   const queries = queriesFor(moodId, taste);
+  const hints = new Map<string, SearchHint>();
   let searchError: unknown = null;
-  let pool = await searchMany(queries, 0).catch((error: unknown) => {
+  let pool = await searchMany(queries, 0, hints).catch((error: unknown) => {
     searchError = error;
     return [] as SpotifyTrack[];
   });
@@ -183,11 +207,11 @@ export async function recommendSongsFromSpotify(
   // Amplia somente se ainda faltar música nova, sem repetir todas as buscas.
   if (availableCount(pool, excluded, moodId) < count) {
     const extraTerms = MOOD_SEARCH_TERMS[moodId].filter((term) => !queries.includes(term));
-    const extra = await searchMany(extraTerms.slice(0, 2), 0).catch(() => [] as SpotifyTrack[]);
+    const extra = await searchMany(extraTerms.slice(0, 2), 0, hints).catch(() => [] as SpotifyTrack[]);
     pool = [...pool, ...extra];
   }
   if (availableCount(pool, excluded, moodId) < count) {
-    const more = await searchMany(queries.slice(0, 2), 10).catch(() => [] as SpotifyTrack[]);
+    const more = await searchMany(queries.slice(0, 2), 10, hints).catch(() => [] as SpotifyTrack[]);
     pool = [...pool, ...more];
   }
 
@@ -211,22 +235,24 @@ export async function recommendSongsFromSpotify(
     throw new SpotifyApiError("no-tracks", "Não encontramos mais músicas novas para esse clima agora.");
   }
 
-  // Prioriza artistas distintos para obter mais variedade de perfis no cache.
-  const artistIds = [...new Set(candidates.map((track) => track.artistIds[0]).filter((id): id is string => Boolean(id)))].slice(0, 3);
-  const genresByArtist = await fetchArtistsGenres(artistIds).catch(() => ({} as Record<string, string[]>));
+  // Classificação rápida usando a origem da busca como sinal FRACO de clima.
+  // Não depende de consultas GET /artists/{id}, nem afirma que o gênero
+  // da pesquisa corresponde ao gênero verdadeiro de cada música.
   const scored = candidates.map((track) => {
-    const genres = [...new Set(track.artistIds.flatMap((id) => genresByArtist[id] ?? []))];
-    const profile = estimateProfile(genres);
-    const fit = genreFit(genres, MOOD_GENRES[moodId]);
+    const hint = hints.get(track.id);
+    const suggestedGenre = hint && hint.kind !== "artist" ? [hint.term] : [];
+    const profile = estimateProfile(suggestedGenre);
+    const fit = suggestedGenre.length ? genreFit(suggestedGenre, MOOD_GENRES[moodId]) : null;
     const acoustic = 0.45 * clamp(1 - Math.abs(profile.energy - mood.energy))
       + 0.4 * clamp(1 - Math.abs(profile.valence - mood.valence))
       + 0.15 * clamp(1 - Math.abs(profile.bpm - BPM_TARGETS[moodId]) / 100);
     // Valores estimados sem gênero têm baixa confiança: não os trate como confirmação de mood.
-    const moodScore = fit === null ? acoustic * 0.65 : acoustic * 0.7 + fit * 0.3;
+    const sourceConfidence = hint?.kind === "genre" ? 0.85 : hint?.kind === "term" ? 0.6 : 0;
+    const moodScore = clamp(acoustic * 0.6 + (fit ?? sourceConfidence) * 0.25 + sourceConfidence * 0.15);
     const familiar = track.artistIds.some((id) => taste.artistIds.has(id)) || track.artist.split(",").some((name) => taste.artists.has(norm(name)));
-    const affinity = genres.length
-      ? genres.reduce((sum, genre) => sum + (taste.genres.get(norm(genre)) ?? 0), 0) / genres.length
-      : 0;
+    // Afinidade de gênero é uma indicação obtida da consulta e do feedback,
+    // não um gênero confirmado pelo endpoint de artista.
+    const affinity = suggestedGenre.length ? Math.max(0, taste.genres.get(norm(suggestedGenre[0])) ?? 0) : 0;
     const feedbackScore = clamp(getArtistFeedbackScore(track.artist, moodId) / 3, -1, 1);
     const liked = getFeedbackForSong(track.id, moodId) === "like";
     const tasteScore = clamp(0.5 + (familiar ? 0.15 : 0) + 0.2 * affinity + 0.2 * feedbackScore + (liked ? 0.1 : 0));
@@ -235,7 +261,7 @@ export async function recommendSongsFromSpotify(
     const song: Song = {
       id: track.id, title: track.title, artist: track.artist, cover: track.cover,
       bpm: profile.bpm, energy: profile.energy, valence: profile.valence,
-      moods: [moodId], spotifyUrl: track.spotifyUrl, estimated: true, genres,
+      moods: [moodId], spotifyUrl: track.spotifyUrl, estimated: true, genres: [],
     };
     return { song, score, artist: track.artistIds[0] ?? norm(track.artist), familiar, recent: recent.has(track.id), fit, affinity, liked };
   });
