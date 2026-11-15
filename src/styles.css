@@ -3632,3 +3632,49 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
 body:has(.app-shell[data-theme="dark"]) {
   background: #30234f;
 }
+
+/* PLAYER — HISTÓRICO E REPLAY */
+.history-song-item > button,
+.replay-song-row > button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(197, 169, 232, .35);
+  border-radius: 50%;
+  background: rgba(197, 169, 232, .12);
+  color: var(--pink);
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, transform .2s ease;
+}
+
+.history-song-item > button:hover,
+.replay-song-row > button:hover {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: var(--ink);
+  transform: scale(1.06);
+}
+
+.history-song-item > button svg,
+.replay-song-row > button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.app-shell[data-theme="light"] .history-song-item > button,
+.app-shell[data-theme="light"] .replay-song-row > button {
+  background: #f2e8f4;
+  color: #93618b;
+  border-color: #dccde5;
+}
+
+.app-shell[data-theme="light"] .history-song-item > button:hover,
+.app-shell[data-theme="light"] .replay-song-row > button:hover {
+  background: #a47799;
+  border-color: #a47799;
+  color: white;
+}

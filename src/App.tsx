@@ -400,6 +400,7 @@ export default function App() {
           <span className="brand">
             HARMOODY<span className="brand-period">.</span>
           </span>
+          <p>música para o que você quer sentir</p>
         </div>
 
         <button
@@ -886,7 +887,7 @@ export default function App() {
                                     onClick={() => setPlayingSong(song)}
                                     aria-label={`Reproduzir ${song.title} no player`}
                                   >
-                                    𝄞
+                                    <Play size={16} />
                                   </button>
                                 )}
                               </div>
