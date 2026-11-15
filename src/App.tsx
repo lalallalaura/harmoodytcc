@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MiniPlayer } from "./components/MiniPlayer";
 import {
-  Sparkles,
   RotateCcw,
   Loader2,
   ListMusic,
@@ -439,20 +438,15 @@ export default function App() {
             <section className="home-hero">
               <div className="hero-topline">
                 <span className="hero-index">
-                  01 / OLÁ!
+                  01 / INÍCIO
                 </span>
 
-                <span className="hero-status">
-                  <span className="status-dot" />
-                  HARMOODY STUDIO
-                </span>
+
               </div>
 
               <div className="hero-main">
                 <div className="hero-copy">
-                  <span className="eyebrow hero-eyebrow">
-                    DESCUBRA SEU SOM
-                  </span>
+
 
                   <h1>
                     Seu momento,
@@ -461,7 +455,7 @@ export default function App() {
                   </h1>
 
                   <p className="hero-description">
-                    Uma trilha sonora para o que você quer sentir.
+                    Músicas para cada momento.
                   </p>
 
                   <a className="hero-scroll" href="#mood-selection">
@@ -539,13 +533,10 @@ export default function App() {
                         <div className="placeholder-content">
                           <Disc3 size={48} />
                           <span>
-                            SUA PRÓXIMA
-                            <br />
-                            MÚSICA FAVORITA!
+                            DESCUBRA MÚSICAS
                           </span>
                           <p>
-                            Escolha como você quer se sentir e descubra
-                            novos sons.
+                            Escolha um mood para começar.
                           </p>
                         </div>
                       </article>
@@ -553,13 +544,12 @@ export default function App() {
                   </div>
 
                   <span className="hero-carousel-hint">
-                    ARRASTE PARA DESCOBRIR <span>⟶</span>
+                    ARRASTE PARA VER MAIS <span>⟶</span>
                   </span>
                 </div>
               </div>
 
               <div className="hero-bottomline">
-                <span>ENCONTRE O SOM DO SEU MOMENTO</span>
                 <span>2026 · HARMOODY</span>
               </div>
             </section>
@@ -569,12 +559,12 @@ export default function App() {
             <section className="mood-selection" id="mood-selection">
               <div className="section-kicker">
                 <span>02</span>
-                <span>ESCOLHA SUA DIREÇÃO</span>
+                <span>ESCOLHA SEU MOOD</span>
               </div>
 
               <div className="mood-intro">
                 <div>
-                  <span className="eyebrow">UM POUCO SOBRE VOCÊ</span>
+
 
                   <h2>
                     Como você quer
@@ -583,16 +573,11 @@ export default function App() {
                   </h2>
                 </div>
 
-                <span className="mood-side-note">
-                  NÃO EXISTE JEITO
-                  <br />
-                  CERTO DE SENTIR.
-                </span>
+
               </div>
 
               <p className="mood-description">
-                Escolha o sentimento que deseja alcançar.
-                A gente encontra músicas para acompanhar esse caminho.
+                Escolha um mood para receber recomendações.
               </p>
 
               <div className="mood-selector-wrap">
@@ -602,10 +587,7 @@ export default function App() {
                 />
               </div>
 
-              <div className="selection-footnote">
-                <Sparkles size={14} />
-                <span>SEU PRÓXIMO MOMENTO COMEÇA AQUI</span>
-              </div>
+
             </section>
 
             {/* CARREGAMENTO */}
@@ -631,7 +613,7 @@ export default function App() {
               <section className="recommendation-area">
                 <div className="section-kicker">
                   <span>03</span>
-                  <span>SUA DESCOBERTA MUSICAL</span>
+                  <span>RECOMENDAÇÕES</span>
                 </div>
 
                 <section className="result-heading">
@@ -745,9 +727,7 @@ export default function App() {
                 <section className="songs-section">
                   <div className="section-title">
                     <div>
-                      <span className="eyebrow">
-                        SELEÇÃO ESPECIALMENTE PARA VOCÊ
-                      </span>
+
 
                       <h2>Seu mix emocional</h2>
                     </div>
@@ -818,13 +798,12 @@ export default function App() {
                 </div>
 
                 <div>
-                  <span className="eyebrow">UM CONVITE</span>
 
-                  <h3>Deixe a música encontrar você.</h3>
+
+                  <h3>Comece por um mood.</h3>
 
                   <p>
-                    Escolha um dos quatro climas e descubra uma seleção
-                    musical pensada para o que você deseja sentir!
+                    Escolha como quer se sentir para ver suas recomendações.
                   </p>
                 </div>
               </section>
@@ -832,7 +811,7 @@ export default function App() {
 
             <footer className="home-footer">
               <span>HARMOODY © 2026</span>
-              <span>ENCONTRE SEU SOM. ♡</span>
+
             </footer>
           </div>
         )}
@@ -1076,7 +1055,7 @@ export default function App() {
                 <div className="profile-music-avatar">{spotifyProfile?.image ? <img src={spotifyProfile.image} alt="Foto de perfil do Spotify" referrerPolicy="no-referrer" /> : <Disc3 size={32} />}</div>
                 <div>
                   <h1>{spotifyProfile ? spotifyProfile.name : "Meu"} <em>{spotifyProfile ? "no Harmoody." : "universo."}</em></h1>
-                  <p>Suas descobertas, seus moods e sua história musical.</p>
+                  <p>Suas músicas e seus moods.</p>
                 </div>
               </div>
             </header>
@@ -1181,7 +1160,7 @@ export default function App() {
 
             <footer className="profile-footer">
               <span>HARMOODY © 2026</span>
-              <span>MÚSICA PARA O QUE VOCÊ QUER SENTIR</span>
+              <span></span>
             </footer>
           </section>
         )}
