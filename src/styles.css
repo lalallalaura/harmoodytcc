@@ -3128,3 +3128,141 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
 @media (prefers-reduced-motion: reduce) {
   .app-shell .hero-music-card, .app-shell .mood-editorial-item { transition: none; }
 }
+/* DESCOBRIR NOVAS MÚSICAS */
+
+.discover-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 20px;
+
+  background: #342742;
+  color: #ffffff;
+
+  border: 1px solid #342742;
+  border-radius: 12px;
+
+  font-family: var(--sans, "DM Sans", sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.discover-more:hover {
+  background: #493653;
+  transform: translateY(-2px);
+}
+
+.discover-more:active {
+  transform: translateY(0);
+}
+
+.discover-more:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* BOTÃO TROCAR */
+
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 42px;
+  padding: 10px 16px;
+
+  background: transparent;
+  color: #c5a9e8;
+
+  border: 1px solid rgba(197, 169, 232, 0.45);
+  border-radius: 12px;
+
+  font-family: var(--sans, "DM Sans", sans-serif);
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.reset-button:hover {
+  background: rgba(197, 169, 232, 0.10);
+  border-color: #c5a9e8;
+  transform: translateY(-1px);
+}
+
+.reset-button:active {
+  transform: translateY(0);
+}
+
+/* MODO CLARO */
+
+.app-shell[data-theme="light"] .discover-more {
+  background: #342742;
+  border-color: #342742;
+  color: #ffffff;
+}
+
+.app-shell[data-theme="light"] .discover-more:hover {
+  background: #493653;
+}
+
+.app-shell[data-theme="light"] .reset-button {
+  background: transparent;
+  color: #785b8b;
+  border-color: #cbb8d8;
+}
+
+.app-shell[data-theme="light"] .reset-button:hover {
+  background: rgba(197, 169, 232, 0.14);
+  border-color: #a98bc4;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  .discover-more {
+    min-height: 46px;
+    padding: 12px 16px;
+    font-size: 12px;
+    border-radius: 11px;
+  }
+
+  .reset-button {
+    min-height: 42px;
+    padding: 10px 13px;
+    font-size: 12px;
+    border-radius: 11px;
+    white-space: nowrap;
+  }
+}
+
+/* ACESSIBILIDADE */
+
+.discover-more:focus-visible,
+.reset-button:focus-visible {
+  outline: 2px solid #a98bc4;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discover-more,
+  .reset-button {
+    transition: none;
+  }
+}
