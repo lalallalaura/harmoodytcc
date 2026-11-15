@@ -229,22 +229,43 @@ export async function recommendSongsFromSpotify(
   let pool = poolData.tracks;
   const hints = poolData.hints;
 
-  // Somente quando o cache não tem faixas inéditas suficientes tentamos
-  // uma ampliação pequena. Assim não há nova pesquisa em cada dislike/clique.
-  if (availableCount(pool, excluded, moodId) < count && poolData.nextOffset <= 20) {
-    const offset = poolData.nextOffset;
-    poolData.nextOffset += 10; // impedir buscas duplicadas em chamadas concorrentes
-    try {
-      const more = await searchMany(poolData.queries.slice(0, 2), offset, hints);
-      poolData.tracks = [...poolData.tracks, ...more];
-      pool = poolData.tracks;
-      saveCandidatePool(moodId, poolData);
-    } catch {
-      // Com o cache disponível, uma falha na ampliação não interrompe a sessão.
+  // Reabastecimento progressivo: o cache inicial não é um catálogo infinito.
+  // No máximo DUAS novas pesquisas por clique, sem depender de /artists/{id}.
+  // Tentamos primeiro termos ainda não buscados; depois novas páginas.
+  if (availableCount(pool, excluded, moodId) < count) {
+    const discoveryQueries = [
+      ...MOOD_SEARCH_TERMS[moodId],
+      ...MOOD_GENRES[moodId].map((genre) => `genre:"${genre}"`),
+      ...[...taste.artists].slice(0, 3).map((artist) => `artist:"${artist.replace(/"/g, "")}"`),
+    ];
+    const unseen = [...new Set(discoveryQueries)].filter((query) => !poolData.queries.includes(query));
+    const batch = unseen.slice(0, 2);
+    let offset = 0;
+
+    if (!batch.length) {
+      // Todos os termos já usados: percorre as páginas, sem limite artificial de 20.
+      // No máximo duas consultas por tentativa, para não provocar outro 429.
+      batch.push(...poolData.queries.slice(0, 2));
+      offset = poolData.nextOffset;
+      poolData.nextOffset = poolData.nextOffset >= 90 ? 10 : poolData.nextOffset + RESULTS_PER_QUERY;
+    } else {
+      poolData.queries.push(...batch);
+    }
+
+    if (batch.length) {
+      try {
+        const more = await searchMany(batch, offset, hints);
+        poolData.tracks = [...poolData.tracks, ...more];
+        pool = poolData.tracks;
+        saveCandidatePool(moodId, poolData);
+      } catch (error) {
+        // Se a busca falhar por cota, o cache continua disponível.
+        // Se não houver faixas inéditas, exibimos o erro real abaixo.
+        if (availableCount(pool, excluded, moodId) === 0) throw error;
+      }
     }
   }
-  // A base de favoritos já entra no catálogo; nenhuma chamada extra aqui.
-  const searchError: unknown = null;
+
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
   const candidates = pool.filter((track) => {
@@ -255,9 +276,7 @@ export async function recommendSongsFromSpotify(
     return true;
   });
   if (!candidates.length) {
-    // Diferencia ausência de faixas de falha real no Spotify (429/403/etc.).
-    if (searchError) throw searchError;
-    throw new SpotifyApiError("no-tracks", "Não encontramos mais músicas novas para esse clima agora.");
+    throw new SpotifyApiError("no-tracks", "As opções inéditas deste clima se esgotaram por enquanto. Tente novamente ou escolha outro mood.");
   }
 
   // Classificação rápida usando a origem da busca como sinal FRACO de clima.
