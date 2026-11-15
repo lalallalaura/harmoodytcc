@@ -27,7 +27,13 @@ const MAX_RECENT = 100;
 const RECENT_PER_MOOD = 48;
 const RESULTS_PER_QUERY = 10;
 const DEFAULT_COUNT = 12;
-const MIN_DISCOVERY_SCORE = 0.58;
+// Termos simples servem como plano B quando o filtro genre: não retorna faixas.
+const MOOD_SEARCH_TERMS: Record<MoodId, string[]> = {
+  energized: ["dance pop", "electropop", "indie dance", "pop rock"],
+  calm: ["dream pop", "acoustic chill", "soft jazz", "indie folk"],
+  romantic: ["neo soul", "indie love songs", "bedroom pop", "bossa nova"],
+  light: ["indie pop", "sunshine pop", "feel good indie", "jangle pop"],
+};
 
 function clamp(n: number, low = 0, high = 1) { return Math.max(low, Math.min(high, n)); }
 function norm(s: string) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
@@ -70,6 +76,7 @@ interface Taste {
   artistIds: Set<string>;
   genres: Map<string, number>;
   hasSignal: boolean;
+  tracks: SpotifyTrack[];
 }
 
 async function getTaste(moodId: MoodId): Promise<Taste> {
@@ -88,7 +95,7 @@ async function getTaste(moodId: MoodId): Promise<Taste> {
   const feedback = getFeedback().filter((item) => item.mood === moodId);
   feedback.filter((item) => item.value === "like").forEach((item) => artists.add(norm(item.artist)));
   const counts = new Map<string, number>();
-  const genresByArtist = await fetchArtistsGenres([...artistIds].slice(0, 6)).catch(() => ({} as Record<string, string[]>));
+  const genresByArtist = await fetchArtistsGenres([...artistIds].slice(0, 4)).catch(() => ({} as Record<string, string[]>));
   Object.values(genresByArtist).forEach((genres) => genres.forEach((genre) => {
     const key = norm(genre);
     counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -99,19 +106,27 @@ async function getTaste(moodId: MoodId): Promise<Taste> {
   }
   const max = Math.max(1, ...[...counts.values()].map(Math.abs));
   const genres = new Map([...counts].map(([genre, count]) => [genre, count / max]));
-  return { artists, artistIds, genres, hasSignal: artists.size > 0 || genres.size > 0 || feedback.length > 0 };
+  return { artists, artistIds, genres, tracks, hasSignal: artists.size > 0 || genres.size > 0 || feedback.length > 0 };
 }
 
 function queriesFor(moodId: MoodId, taste: Taste): string[] {
-  const moodGenres = shuffle(MOOD_GENRES[moodId]).slice(0, 3).map((genre) => `genre:"${genre}"`);
-  const personalGenres = [...taste.genres]
-    .filter(([, weight]) => weight > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 1)
-    .map(([genre]) => `genre:"${genre.replace(/"/g, "")}"`);
-  // Apenas uma busca por artista: não deixa os favoritos dominarem os candidatos.
-  const artist = shuffle([...taste.artists]).slice(0, 1).map((name) => `artist:"${name.replace(/"/g, "")}"`);
-  return [...new Set([...moodGenres, ...personalGenres, ...artist])];
+  // Dois filtros de gênero + dois termos comuns: não dependemos só de genre:.
+  const byGenre = shuffle(MOOD_GENRES[moodId]).slice(0, 2)
+    .map((genre) => `genre:"${genre}"`);
+  const byTerm = shuffle(MOOD_SEARCH_TERMS[moodId]).slice(0, 2);
+  const artist = shuffle([...taste.artists]).slice(0, 1)
+    .map((name) => `artist:"${name.replace(/"/g, "")}"`);
+  return [...new Set([...byGenre, ...byTerm, ...artist])];
+}
+
+// Conta resultados realmente novos; excluir músicas vistas não pode enganar o fallback.
+function availableCount(pool: SpotifyTrack[], excluded: Set<string>, moodId: MoodId): number {
+  const unique = new Set<string>();
+  for (const track of pool) {
+    if (!valid(track) || excluded.has(track.id) || getFeedbackForSong(track.id, moodId) === "dislike") continue;
+    unique.add(keyOf(track));
+  }
+  return unique.size;
 }
 
 async function searchMany(queries: string[], offset: number): Promise<SpotifyTrack[]> {
@@ -121,7 +136,12 @@ async function searchMany(queries: string[], offset: number): Promise<SpotifyTra
     const error = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
     throw error?.reason ?? new SpotifyApiError("spotify-error", "Não foi possível buscar músicas.");
   }
-  return ok.flatMap((result) => result.value).filter(valid);
+  const tracks = ok.flatMap((result) => result.value).filter(valid);
+  if (!tracks.length) {
+    const error = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
+    if (error) throw error.reason;
+  }
+  return tracks;
 }
 
 function genreFit(genres: string[], targets: string[]): number | null {
@@ -146,20 +166,35 @@ export async function recommendSongsFromSpotify(
   if (!count) return { songs: [], score: 0 };
   const excluded = new Set(options?.excludeIds ?? []);
   const recent = new Set(recentFor(moodId));
-  const taste = await getTaste(moodId).catch((): Taste => ({ artists: new Set(), artistIds: new Set(), genres: new Map(), hasSignal: false }));
+  const taste = await getTaste(moodId).catch((): Taste => ({
+    artists: new Set(), artistIds: new Set(), genres: new Map(),
+    tracks: [], hasSignal: false,
+  }));
+
+  // Começa em offset 0: deslocamentos aleatórios vazios eram uma das causas
+  // de buscas sem músicas (especialmente para gêneros pouco populares).
   const queries = queriesFor(moodId, taste);
-  const offset = Math.floor(Math.random() * 2) * 10;
-  const first = await searchMany(queries, offset);
-  let pool = first;
-  // Só amplia a pesquisa quando o primeiro lote é realmente insuficiente.
-  if (pool.length < count + 5) {
-    const more = await searchMany(queries.slice(0, 2), offset === 0 ? 10 : 0).catch(() => [] as SpotifyTrack[]);
+  let searchError: unknown = null;
+  let pool = await searchMany(queries, 0).catch((error: unknown) => {
+    searchError = error;
+    return [] as SpotifyTrack[];
+  });
+
+  // Amplia somente se ainda faltar música nova, sem repetir todas as buscas.
+  if (availableCount(pool, excluded, moodId) < count) {
+    const extraTerms = MOOD_SEARCH_TERMS[moodId].filter((term) => !queries.includes(term));
+    const extra = await searchMany(extraTerms.slice(0, 2), 0).catch(() => [] as SpotifyTrack[]);
+    pool = [...pool, ...extra];
+  }
+  if (availableCount(pool, excluded, moodId) < count) {
+    const more = await searchMany(queries.slice(0, 2), 10).catch(() => [] as SpotifyTrack[]);
     pool = [...pool, ...more];
   }
-  // Busca aberta somente como último recurso; os resultados ainda passam pelo ranking.
-  if (pool.length < count) {
-    const fallback = await searchMany(shuffle(MOOD_GENRES[moodId]).slice(0, 2).map((genre) => `genre:"${genre}"`), 0).catch(() => [] as SpotifyTrack[]);
-    pool = [...pool, ...fallback];
+
+  // Último recurso: músicas reais que a pessoa já escuta/salvou. Não é uma
+  // playlist inventada e não exige requisições novas (getTaste já as buscou).
+  if (availableCount(pool, excluded, moodId) < count) {
+    pool = [...pool, ...shuffle(taste.tracks)];
   }
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
@@ -170,10 +205,14 @@ export async function recommendSongsFromSpotify(
     seenNames.add(key);
     return true;
   });
-  if (!candidates.length) throw new SpotifyApiError("no-tracks", "Não encontramos músicas novas para esse clima agora.");
+  if (!candidates.length) {
+    // Diferencia ausência de faixas de falha real no Spotify (429/403/etc.).
+    if (searchError) throw searchError;
+    throw new SpotifyApiError("no-tracks", "Não encontramos mais músicas novas para esse clima agora.");
+  }
 
   // Prioriza artistas distintos para obter mais variedade de perfis no cache.
-  const artistIds = [...new Set(candidates.map((track) => track.artistIds[0]).filter((id): id is string => Boolean(id)))].slice(0, 6);
+  const artistIds = [...new Set(candidates.map((track) => track.artistIds[0]).filter((id): id is string => Boolean(id)))].slice(0, 3);
   const genresByArtist = await fetchArtistsGenres(artistIds).catch(() => ({} as Record<string, string[]>));
   const scored = candidates.map((track) => {
     const genres = [...new Set(track.artistIds.flatMap((id) => genresByArtist[id] ?? []))];
@@ -201,21 +240,10 @@ export async function recommendSongsFromSpotify(
     return { song, score, artist: track.artistIds[0] ?? norm(track.artist), familiar, recent: recent.has(track.id), fit, affinity, liked };
   });
 
-  // Não confundir gênero desconhecido com música incompatível.
-  // O Spotify pode não devolver os gêneros de todos os artistas; nesses casos
-  // ainda podemos aproveitar candidatos das buscas por mood e gosto pessoal.
-  const strong = scored.filter((item) =>
-    item.familiar || item.liked || item.affinity > 0 ||
-    (item.fit !== null && item.fit > 0 && item.score >= MIN_DISCOVERY_SCORE)
-  );
-  const strongIds = new Set(strong.map((item) => item.song.id));
-  const secondary = scored.filter((item) => !strongIds.has(item.song.id) && item.fit === null);
-  // Primeiro as opções com evidência de afinidade; completar com gêneros
-  // desconhecidos apenas quando necessário, sem inventar compatibilidade.
-  const eligible = strong.length >= count ? strong : [...strong, ...secondary];
-  if (!eligible.length) {
-    throw new SpotifyApiError("no-tracks", "Não encontramos músicas disponíveis para esse clima agora.");
-  }
+  // Toda faixa válida encontrada pode participar. Gênero ausente NÃO é
+  // evidência de incompatibilidade e não pode zerar a recomendação.
+  // O ranking abaixo continua priorizando compatibilidade e gosto pessoal.
+  const eligible = scored;
   // Sorteio ponderado: afinidade continua sendo a base, mas cada escolha
   // diminui gradualmente a prioridade dos artistas já presentes na seleção.
   // Não existe limite fixo por artista.
@@ -229,7 +257,7 @@ export async function recommendSongsFromSpotify(
       const repeats = artistCounts.get(item.artist) ?? 0;
       const diversityPenalty = 0.095 * Math.log2(1 + repeats * 2);
       const recentPenalty = item.recent ? 0.045 : 0;
-      const uncertainPenalty = item.fit === null && !item.familiar && !item.liked && item.affinity <= 0 ? 0.14 : 0;
+      const uncertainPenalty = item.fit === null && !item.familiar && !item.liked && item.affinity <= 0 ? 0.06 : 0;
       const adjusted = item.score - diversityPenalty - recentPenalty - uncertainPenalty;
       return Math.exp((adjusted - 1) / TEMPERATURE);
     });
