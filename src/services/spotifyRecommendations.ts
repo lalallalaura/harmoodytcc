@@ -28,6 +28,7 @@ const RECENT_PER_MOOD = 48;
 const RESULTS_PER_QUERY = 10;
 const DEFAULT_COUNT = 12;
 const MAX_ARTIST = 2;
+const MIN_DISCOVERY_SCORE = 0.58;
 
 function clamp(n: number, low = 0, high = 1) { return Math.max(low, Math.min(high, n)); }
 function norm(s: string) { return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim(); }
@@ -181,7 +182,7 @@ export async function recommendSongsFromSpotify(
       + 0.4 * clamp(1 - Math.abs(profile.valence - mood.valence))
       + 0.15 * clamp(1 - Math.abs(profile.bpm - BPM_TARGETS[moodId]) / 100);
     // Valores estimados sem gênero têm baixa confiança: não os trate como confirmação de mood.
-    const moodScore = fit === null ? 0.5 : acoustic * 0.7 + fit * 0.3;
+    const moodScore = fit === null ? acoustic * 0.65 : acoustic * 0.7 + fit * 0.3;
     const familiar = track.artistIds.some((id) => taste.artistIds.has(id)) || track.artist.split(",").some((name) => taste.artists.has(norm(name)));
     const affinity = genres.length
       ? genres.reduce((sum, genre) => sum + (taste.genres.get(norm(genre)) ?? 0), 0) / genres.length
@@ -196,11 +197,21 @@ export async function recommendSongsFromSpotify(
       bpm: profile.bpm, energy: profile.energy, valence: profile.valence,
       moods: [moodId], spotifyUrl: track.spotifyUrl, estimated: true, genres,
     };
-    return { song, score, artist: track.artistIds[0] ?? norm(track.artist), familiar, recent: recent.has(track.id) };
+    return { song, score, artist: track.artistIds[0] ?? norm(track.artist), familiar, recent: recent.has(track.id), fit, affinity, liked };
   });
 
   // Escolhe por qualidade, com pequena variação somente entre faixas próximas.
-  const ranked = scored
+  const eligible = scored.filter((item) => {
+    // Não rejeita músicas por país/idioma: exige evidência de afinidade
+    // para descobertas sem gênero conhecido ou compatível com o mood.
+    if (item.familiar || item.liked || item.affinity > 0) return true;
+    if (item.fit === null || item.fit === 0) return false;
+    return item.score >= MIN_DISCOVERY_SCORE;
+  });
+  if (!eligible.length) {
+    throw new SpotifyApiError("no-tracks", "Não encontramos músicas com compatibilidade suficiente para esse clima agora.");
+  }
+  const ranked = eligible
   .map((item) => ({
     ...item,
     rank:
