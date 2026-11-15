@@ -148,7 +148,7 @@ export async function recommendSongsFromSpotify(
   const recent = new Set(recentFor(moodId));
   const taste = await getTaste(moodId).catch((): Taste => ({ artists: new Set(), artistIds: new Set(), genres: new Map(), hasSignal: false }));
   const queries = queriesFor(moodId, taste);
-  const offset = Math.floor(Math.random() * 3) * 10;
+  const offset = Math.floor(Math.random() * 2) * 10;
   const first = await searchMany(queries, offset);
   let pool = first;
   // Só amplia a pesquisa quando o primeiro lote é realmente insuficiente.
@@ -201,16 +201,20 @@ export async function recommendSongsFromSpotify(
     return { song, score, artist: track.artistIds[0] ?? norm(track.artist), familiar, recent: recent.has(track.id), fit, affinity, liked };
   });
 
-  // Escolhe por qualidade, com pequena variação somente entre faixas próximas.
-  const eligible = scored.filter((item) => {
-    // Não rejeita músicas por país/idioma: exige evidência de afinidade
-    // para descobertas sem gênero conhecido ou compatível com o mood.
-    if (item.familiar || item.liked || item.affinity > 0) return true;
-    if (item.fit === null || item.fit === 0) return false;
-    return item.score >= MIN_DISCOVERY_SCORE;
-  });
+  // Não confundir gênero desconhecido com música incompatível.
+  // O Spotify pode não devolver os gêneros de todos os artistas; nesses casos
+  // ainda podemos aproveitar candidatos das buscas por mood e gosto pessoal.
+  const strong = scored.filter((item) =>
+    item.familiar || item.liked || item.affinity > 0 ||
+    (item.fit !== null && item.fit > 0 && item.score >= MIN_DISCOVERY_SCORE)
+  );
+  const strongIds = new Set(strong.map((item) => item.song.id));
+  const secondary = scored.filter((item) => !strongIds.has(item.song.id) && item.fit === null);
+  // Primeiro as opções com evidência de afinidade; completar com gêneros
+  // desconhecidos apenas quando necessário, sem inventar compatibilidade.
+  const eligible = strong.length >= count ? strong : [...strong, ...secondary];
   if (!eligible.length) {
-    throw new SpotifyApiError("no-tracks", "Não encontramos músicas com compatibilidade suficiente para esse clima agora.");
+    throw new SpotifyApiError("no-tracks", "Não encontramos músicas disponíveis para esse clima agora.");
   }
   // Sorteio ponderado: afinidade continua sendo a base, mas cada escolha
   // diminui gradualmente a prioridade dos artistas já presentes na seleção.
@@ -225,7 +229,8 @@ export async function recommendSongsFromSpotify(
       const repeats = artistCounts.get(item.artist) ?? 0;
       const diversityPenalty = 0.095 * Math.log2(1 + repeats * 2);
       const recentPenalty = item.recent ? 0.045 : 0;
-      const adjusted = item.score - diversityPenalty - recentPenalty;
+      const uncertainPenalty = item.fit === null && !item.familiar && !item.liked && item.affinity <= 0 ? 0.14 : 0;
+      const adjusted = item.score - diversityPenalty - recentPenalty - uncertainPenalty;
       return Math.exp((adjusted - 1) / TEMPERATURE);
     });
     const total = weights.reduce((sum, weight) => sum + weight, 0);
