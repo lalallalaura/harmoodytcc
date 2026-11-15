@@ -18,6 +18,7 @@ import { SongCard } from "./components/SongCard";
 import { ScoreCard } from "./components/ScoreCard";
 import { BottomNav } from "./components/BottomNav";
 import { SpotifyConnect } from "./components/SpotifyConnect";
+import { getValidAccessToken, isSpotifyConnected } from "./services/spotifyAuth";
 import { moods } from "./data";
 import {
   recommendSongs,
@@ -65,6 +66,7 @@ export default function App() {
   const [shownIds, setShownIds] = useState<string[]>([]);
   const [playlistSize, setPlaylistSize] = useState(12);
   const [heroTracks, setHeroTracks] = useState<SpotifyTrack[]>([]);
+  const [spotifyProfile, setSpotifyProfile] = useState<{ name: string; image: string | null } | null>(null);
   const [pendingReplacements, setPendingReplacements] = useState<Array<{ id: string; position: number }>>([]);
   const replacingIds = useRef(new Set<string>());
   const shownIdsRef = useRef<string[]>([]);
@@ -82,6 +84,33 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("harmoody_theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (activeTab !== "profile") return;
+    let cancelled = false;
+    if (!isSpotifyConnected()) {
+      setSpotifyProfile(null);
+      return;
+    }
+    async function loadSpotifyProfile() {
+      try {
+        const token = await getValidAccessToken();
+        const response = await fetch("https://api.spotify.com/v1/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error("Não foi possível carregar o perfil");
+        const data: { display_name?: string; images?: Array<{ url: string }> } = await response.json();
+        if (!cancelled) setSpotifyProfile({
+          name: data.display_name || "Meu universo",
+          image: data.images?.[0]?.url || null,
+        });
+      } catch {
+        if (!cancelled) setSpotifyProfile(null);
+      }
+    }
+    void loadSpotifyProfile();
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1042,9 +1071,9 @@ export default function App() {
             <header className="profile-music-header">
               <span className="profile-kicker">HARMOODY / SEU ESPAÇO</span>
               <div className="profile-music-title">
-                <div className="profile-music-avatar"><Disc3 size={32} /></div>
+                <div className="profile-music-avatar">{spotifyProfile?.image ? <img src={spotifyProfile.image} alt="Foto de perfil do Spotify" referrerPolicy="no-referrer" /> : <Disc3 size={32} />}</div>
                 <div>
-                  <h1>Meu <em>universo.</em></h1>
+                  <h1>{spotifyProfile ? spotifyProfile.name : "Meu"} <em>{spotifyProfile ? "no Harmoody." : "universo."}</em></h1>
                   <p>Suas descobertas, seus moods e sua história musical.</p>
                 </div>
               </div>

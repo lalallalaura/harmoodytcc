@@ -3483,3 +3483,13 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
   .profile-music-stats { gap: 6px; }
   .profile-music-stats > div { padding: 15px 5px; }
 }
+
+/* Ajuste pontual: banner escuro deve manter letras claras em ambos os temas. */
+.app-shell .replay-banner h2,
+.app-shell[data-theme="light"] .replay-banner h2 { color: #f8eff8 !important; -webkit-text-fill-color: #f8eff8; }
+.app-shell .replay-banner > span,
+.app-shell[data-theme="light"] .replay-banner > span { color: #f0add2 !important; }
+.app-shell .replay-banner p,
+.app-shell[data-theme="light"] .replay-banner p { color: #eadce9 !important; }
+.profile-music-avatar { overflow: hidden; }
+.profile-music-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }

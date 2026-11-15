@@ -8,6 +8,7 @@ const TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
 // e adicionar as faixas recomendadas nela (criamos como privada por padrão).
 const SPOTIFY_SCOPES = [
   "user-top-read",
+  "user-read-private",
   "user-library-read",
   "playlist-modify-private",
 ].join(" ");
