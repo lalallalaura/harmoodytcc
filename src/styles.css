@@ -3500,3 +3500,37 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
 .spotify-period-button.active { background: var(--lavender); color: #28182e; border-color: var(--lavender); font-weight: 700; }
 .app-shell[data-theme="light"] .spotify-period-button { color: #76516f; border-color: #d8c6df; }
 .app-shell[data-theme="light"] .spotify-period-button.active { background: #76516f; color: #fff; border-color: #76516f; }
+/* CONTROLES DO SPOTIFY NA MESMA LINHA */
+
+.spotify-controls-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  margin-bottom: 18px;
+}
+
+.spotify-controls-row .spotify-period-filter {
+  margin: 0;
+}
+
+.spotify-controls-row .spotify-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.spotify-controls-row .spotify-secondary-button {
+  white-space: nowrap;
+}
+
+/* Mobile: quebra apenas quando necessário */
+
+@media (max-width: 700px) {
+  .spotify-controls-row {
+    align-items: flex-start;
+  }
+}
