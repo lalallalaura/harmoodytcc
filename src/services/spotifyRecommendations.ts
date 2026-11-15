@@ -200,12 +200,19 @@ export async function recommendSongsFromSpotify(
   });
 
   // Escolhe por qualidade, com pequena variação somente entre faixas próximas.
-  const ranked = scored.map((item) => ({ ...item, rank: item.score + Math.random() * 0.035 }))
-    .sort((a, b) => b.rank - a.rank);
+  const ranked = scored
+  .map((item) => ({
+    ...item,
+    rank:
+      item.score +
+      Math.random() * 0.015 -
+      (item.recent ? 0.025 : 0),
+  }))
+  .sort((a, b) => b.rank - a.rank);
   const selected: typeof ranked = [];
   const selectedIds = new Set<string>();
   const artistCounts = new Map<string, number>();
-  const familiarLimit = taste.hasSignal ? Math.ceil(count * 0.6) : count;
+  const familiarLimit = count;
   let familiarCount = 0;
   function pick(item: (typeof ranked)[number], allowRecent: boolean, allowExtraArtist: boolean, allowExtraFamiliar: boolean) {
     if (selectedIds.has(item.song.id) || (!allowRecent && item.recent)) return false;
