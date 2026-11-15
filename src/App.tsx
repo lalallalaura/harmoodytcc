@@ -269,25 +269,21 @@ export default function App() {
               <div className="hero-main">
                 <div className="hero-copy">
                   <span className="eyebrow hero-eyebrow">
-                    MÚSICA · EMOÇÃO · CONEXÃO
+                    DESCUBRA SEU SOM
                   </span>
 
                   <h1>
-                    A vida tem
+                    Seu momento,
                     <br />
-                    <span>uma trilha</span>
-                    <br />
-                    sonora.
+                    sua <span>música.</span>
                   </h1>
 
                   <p className="hero-description">
-                    Nem sempre sabemos o que ouvir.
-                    Mas sabemos como queremos nos sentir.
-                    <strong> Comece por aí.</strong>
+                    Uma trilha sonora para o que você quer sentir.
                   </p>
 
                   <a className="hero-scroll" href="#mood-selection">
-                    <span>ENCONTRE SEU CLIMA</span>
+                    <span>EXPLORAR MOODS</span>
                     <ArrowDown size={15} />
                   </a>
                 </div>
@@ -356,9 +352,9 @@ export default function App() {
                           <Disc3 size={48} />
 
                           <span>
-                            SUA PRÓXIMA 
+                            YOUR NEXT
                             <br />
-                            MUSICA FAVORITA!
+                            FAVORITE SONG
                           </span>
 
                           <p>
