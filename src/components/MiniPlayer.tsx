@@ -43,14 +43,14 @@ export function MiniPlayer({ song, onClose }: MiniPlayerProps) {
         </div>
 
         <a
-          href={song.spotifyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Abrir no Spotify"
-          aria-label={`Abrir ${song.title} no Spotify`}
-        >
-          <ExternalLink size={17} />
-        </a>
+  href={song.spotifyUrl ?? undefined}
+  target="_blank"
+  rel="noopener noreferrer"
+  title="Abrir no Spotify"
+  aria-label={`Abrir ${song.title} no Spotify`}
+>
+  <ExternalLink size={17} />
+</a>
       </div>
 
       <iframe
