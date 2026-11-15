@@ -2,10 +2,12 @@ import { SpotifyAuthError, getValidAccessToken } from "./spotifyAuth";
 import { SpotifyTrack } from "../types";
 
 const API_BASE = "https://api.spotify.com/v1";
-const MIN_REQUEST_INTERVAL_MS = 350;
+const MIN_REQUEST_INTERVAL_MS = 200;
+const MAX_CONCURRENT_REQUESTS = 3;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const ARTIST_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const MAX_ARTIST_LOOKUPS = 20;
+const MAX_ARTIST_LOOKUPS = 6;
+const MAX_AUTOMATIC_RETRY_MS = 10000;
 
 class SpotifyApiError extends Error {
   code: string;
@@ -17,19 +19,47 @@ class SpotifyApiError extends Error {
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-let requestQueue: Promise<void> = Promise.resolve();
+
+let activeRequests = 0;
 let nextRequestAt = 0;
 let cooldownUntil = 0;
+let queueTimer: ReturnType<typeof setTimeout> | null = null;
+const pendingTasks: Array<() => void> = [];
+
+// Inicia no máximo três chamadas simultâneas, espaçadas em 200 ms.
+// A fila NÃO fica presa esperando a resposta de uma chamada anterior.
+function processQueue(): void {
+  if (queueTimer) {
+    clearTimeout(queueTimer);
+    queueTimer = null;
+  }
+  if (!pendingTasks.length || activeRequests >= MAX_CONCURRENT_REQUESTS) return;
+
+  const delay = Math.max(0, nextRequestAt - Date.now(), cooldownUntil - Date.now());
+  if (delay > 0) {
+    queueTimer = setTimeout(processQueue, delay);
+    return;
+  }
+
+  const task = pendingTasks.shift()!;
+  activeRequests++;
+  nextRequestAt = Date.now() + MIN_REQUEST_INTERVAL_MS;
+  task();
+  if (pendingTasks.length) queueTimer = setTimeout(processQueue, MIN_REQUEST_INTERVAL_MS);
+}
 
 function schedule<T>(operation: () => Promise<T>): Promise<T> {
-  const result = requestQueue.then(async () => {
-    const delay = Math.max(0, nextRequestAt - Date.now(), cooldownUntil - Date.now());
-    if (delay > 0) await wait(delay);
-    nextRequestAt = Date.now() + MIN_REQUEST_INTERVAL_MS;
-    return operation();
+  return new Promise<T>((resolve, reject) => {
+    pendingTasks.push(() => {
+      void operation()
+        .then(resolve, reject)
+        .finally(() => {
+          activeRequests--;
+          processQueue();
+        });
+    });
+    processQueue();
   });
-  requestQueue = result.then(() => undefined, () => undefined);
-  return result;
 }
 
 type CacheEntry = { value: any; expiresAt: number };
@@ -40,7 +70,10 @@ const artistCache = new Map<string, { genres: string[]; expiresAt: number }>();
 function cachedValue(key: string): any | undefined {
   const entry = responseCache.get(key);
   if (!entry) return undefined;
-  if (entry.expiresAt <= Date.now()) { responseCache.delete(key); return undefined; }
+  if (entry.expiresAt <= Date.now()) {
+    responseCache.delete(key);
+    return undefined;
+  }
   return entry.value;
 }
 
@@ -54,7 +87,7 @@ async function spotifyFetch(path: string, options?: { method?: string; body?: st
     if (pending) return pending;
   }
 
-  const run = schedule(async () => {
+  const run = (async () => {
     let accessToken: string;
     try {
       accessToken = await getValidAccessToken();
@@ -64,31 +97,34 @@ async function spotifyFetch(path: string, options?: { method?: string; body?: st
     }
 
     for (let attempt = 0; attempt < 2; attempt++) {
-      let response: Response;
-      try {
-        response = await fetch(`${API_BASE}${path}`, {
-          method,
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            ...(options?.body ? { "Content-Type": "application/json" } : {}),
-          },
-          body: options?.body,
-        });
-      } catch {
-        throw new SpotifyApiError("network-error", "Não foi possível falar com o Spotify agora. Verifique sua internet.");
-      }
+      // Cada tentativa ocupa um slot apenas enquanto a chamada HTTP está ativa.
+      const response = await schedule(async () => {
+        try {
+          return await fetch(`${API_BASE}${path}`, {
+            method,
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              ...(options?.body ? { "Content-Type": "application/json" } : {}),
+            },
+            body: options?.body,
+          });
+        } catch {
+          throw new SpotifyApiError("network-error", "Não foi possível falar com o Spotify agora. Verifique sua internet.");
+        }
+      });
 
       if (response.status === 429) {
-        const retryAfter = Number(response.headers.get("Retry-After"));
-        const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
-          ? Math.min(retryAfter * 1000, 60000)
-          : 5000;
+        const rawRetryAfter = response.headers.get("Retry-After");
+        const seconds = rawRetryAfter === null ? NaN : Number(rawRetryAfter);
+        const delayMs = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 5000;
         cooldownUntil = Math.max(cooldownUntil, Date.now() + delayMs);
-        if (attempt === 0) {
+        processQueue();
+        // Evita deixar a tela carregando por um minuto inteiro.
+        if (attempt === 0 && delayMs <= MAX_AUTOMATIC_RETRY_MS) {
           await wait(delayMs);
           continue;
         }
-        throw new SpotifyApiError("rate-limited", "Muitas solicitações ao Spotify agora. Tente novamente em instantes.");
+        throw new SpotifyApiError("rate-limited", "O Spotify limitou as solicitações. Aguarde um pouco antes de tentar novamente.");
       }
       if (response.status === 401) throw new SpotifyApiError("unauthorized", "Sua conexão com o Spotify expirou. Conecte novamente.");
       if (response.status === 403) throw new SpotifyApiError("forbidden", "O Spotify recusou essa solicitação para o seu app.");
@@ -106,8 +142,8 @@ async function spotifyFetch(path: string, options?: { method?: string; body?: st
       if (method === "GET") responseCache.set(cacheKey, { value: data, expiresAt: Date.now() + CACHE_TTL_MS });
       return data;
     }
-    throw new SpotifyApiError("rate-limited", "Muitas solicitações ao Spotify agora. Tente novamente em instantes.");
-  });
+    throw new SpotifyApiError("rate-limited", "O Spotify limitou as solicitações. Tente novamente mais tarde.");
+  })();
 
   if (method !== "GET") return run;
   pendingGets.set(cacheKey, run);
@@ -165,8 +201,6 @@ export async function fetchArtistsGenres(artistIds: string[]): Promise<Record<st
     if (cached && cached.expiresAt > Date.now()) result[id] = cached.genres;
     else missing.push(id);
   }
-  // Evita dezenas de consultas por recomendação. O restante fica sem gênero
-  // até uma próxima busca, quando poderá ser consultado e armazenado no cache.
   const lookups = missing.slice(0, MAX_ARTIST_LOOKUPS);
   const outcomes = await Promise.allSettled(lookups.map((id) => spotifyFetch(`/artists/${id}`)));
   outcomes.forEach((outcome, index) => {
