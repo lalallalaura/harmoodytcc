@@ -1,8 +1,8 @@
-Harmoody — versão funcional
+Harmoody  versão funcional
 
 Esta versão é um app React + TypeScript + Vite
 
-O que já funciona:
+- O que já funciona:
 
 - Seleção de 4 experiências desejadas: Energizado, Calmo, Romântico e Leve.
 - Cards clicáveis com estado selecionado.
@@ -18,7 +18,7 @@ O que já funciona:
 - Visual inspirado no Harmoody, com roxo `#8b5cf6`.
 - Não depende de Firebase, Render ou Spotify para funcionar.
 
-## Rodar
+ 1 Rodar
 
 ```bash
 npm install
@@ -27,7 +27,7 @@ npm run dev
 
 Depois abra o endereço mostrado pelo Vite.
 
-## Build
+ 1 Build
 
 ```bash
 npm run build
