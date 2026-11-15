@@ -7,6 +7,8 @@ import {
   SpotifyApiError,
 } from "./spotifyApi";
 import { estimateProfile } from "./moodProfile";
+import { getValidAccessToken } from "./spotifyAuth";
+import { cachedTasteData, loadCandidatePool, saveCandidatePool, syncSpotifySession, type CandidatePool, type SearchHint } from "./recommendationCache";
 import {
   getArtistFeedbackScore,
   getFeedback,
@@ -79,11 +81,18 @@ interface Taste {
 }
 
 async function getTaste(moodId: MoodId): Promise<Taste> {
-  const [top, saved] = await Promise.allSettled([fetchUserTopTracks(10), fetchUserSavedTracks(10)]);
-  const tracks = [
-    ...(top.status === "fulfilled" ? top.value : []),
-    ...(saved.status === "fulfilled" ? saved.value : []),
-  ];
+  // O gosto musical só é buscado novamente depois do TTL (ou troca de conta).
+  // O feedback local continua sendo lido a cada recomendação.
+  const tracks = await cachedTasteData("spotify-taste", async () => {
+    const [top, saved] = await Promise.allSettled([fetchUserTopTracks(10), fetchUserSavedTracks(10)]);
+    const list = [
+      ...(top.status === "fulfilled" ? top.value : []),
+      ...(saved.status === "fulfilled" ? saved.value : []),
+    ];
+    // Não guardar uma resposta vazia causada por 429/erro de rede.
+    if (!list.length) throw new SpotifyApiError("no-taste", "Não conseguimos carregar as preferências do Spotify agora.");
+    return list;
+  }).catch(() => [] as SpotifyTrack[]);
   const artists = new Set<string>();
   const artistIds = new Set<string>();
   for (const track of tracks) {
@@ -112,12 +121,12 @@ function queriesFor(moodId: MoodId, taste: Taste): string[] {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 1)
     .map(([genre]) => `genre:"${genre.replace(/"/g, "")}"`);
-  const byGenre = shuffle(MOOD_GENRES[moodId]).slice(0, favoriteGenre.length ? 1 : 2)
+  const byGenre = shuffle(MOOD_GENRES[moodId]).slice(0, 1)
     .map((genre) => `genre:"${genre}"`);
   const byTerm = shuffle(MOOD_SEARCH_TERMS[moodId]).slice(0, 2);
   const artist = shuffle([...taste.artists]).slice(0, 1)
     .map((name) => `artist:"${name.replace(/"/g, "")}"`);
-  return [...new Set([...byGenre, ...byTerm, ...favoriteGenre, ...artist])];
+  return [...new Set([...byGenre, ...byTerm, ...favoriteGenre, ...artist])].slice(0, 4);
 }
 
 // Conta resultados realmente novos; excluir músicas vistas não pode enganar o fallback.
@@ -130,7 +139,6 @@ function availableCount(pool: SpotifyTrack[], excluded: Set<string>, moodId: Moo
   return unique.size;
 }
 
-type SearchHint = { term: string; kind: "genre" | "term" | "artist" };
 
 function hintForQuery(query: string): SearchHint {
   if (query.startsWith('genre:"')) return { term: query.slice(7, -1), kind: "genre" };
@@ -189,37 +197,54 @@ export async function recommendSongsFromSpotify(
   if (!count) return { songs: [], score: 0 };
   const excluded = new Set(options?.excludeIds ?? []);
   const recent = new Set(recentFor(moodId));
+  // Uma conta diferente nunca reutiliza a seleção da anterior.
+  const token = await getValidAccessToken();
+  syncSpotifySession(token);
   const taste = await getTaste(moodId).catch((): Taste => ({
     artists: new Set(), artistIds: new Set(), genres: new Map(),
     tracks: [], hasSignal: false,
   }));
 
-  // Começa em offset 0: deslocamentos aleatórios vazios eram uma das causas
-  // de buscas sem músicas (especialmente para gêneros pouco populares).
-  const queries = queriesFor(moodId, taste);
-  const hints = new Map<string, SearchHint>();
-  let searchError: unknown = null;
-  let pool = await searchMany(queries, 0, hints).catch((error: unknown) => {
-    searchError = error;
-    return [] as SpotifyTrack[];
+  // Só a primeira geração de cada mood faz buscas iniciais.
+  // Na troca de faixas e em "Descobrir novas músicas", selecionamos localmente.
+  const poolData: CandidatePool = await loadCandidatePool(moodId, async () => {
+    const queries = queriesFor(moodId, taste);
+    const hints = new Map<string, SearchHint>();
+    let tracks: SpotifyTrack[] = [];
+    let searchError: unknown = null;
+    try {
+      tracks = await searchMany(queries, 0, hints);
+    } catch (error) {
+      searchError = error;
+    }
+    if (tracks.length < count) {
+      // Buscas simples são mais resilientes do que depender só de genre:.
+      const extra = MOOD_SEARCH_TERMS[moodId].filter((term) => !queries.includes(term)).slice(0, 2);
+      try { tracks.push(...await searchMany(extra, 0, hints)); }
+      catch (error) { searchError = searchError ?? error; }
+    }
+    if (!tracks.length && !taste.tracks.length && searchError) throw searchError;
+    return { tracks: [...tracks, ...taste.tracks], hints, queries, nextOffset: 10 };
   });
+  let pool = poolData.tracks;
+  const hints = poolData.hints;
 
-  // Amplia somente se ainda faltar música nova, sem repetir todas as buscas.
-  if (availableCount(pool, excluded, moodId) < count) {
-    const extraTerms = MOOD_SEARCH_TERMS[moodId].filter((term) => !queries.includes(term));
-    const extra = await searchMany(extraTerms.slice(0, 2), 0, hints).catch(() => [] as SpotifyTrack[]);
-    pool = [...pool, ...extra];
+  // Somente quando o cache não tem faixas inéditas suficientes tentamos
+  // uma ampliação pequena. Assim não há nova pesquisa em cada dislike/clique.
+  if (availableCount(pool, excluded, moodId) < count && poolData.nextOffset <= 20) {
+    const offset = poolData.nextOffset;
+    poolData.nextOffset += 10; // impedir buscas duplicadas em chamadas concorrentes
+    try {
+      const more = await searchMany(poolData.queries.slice(0, 2), offset, hints);
+      poolData.tracks = [...poolData.tracks, ...more];
+      pool = poolData.tracks;
+      saveCandidatePool(moodId, poolData);
+    } catch {
+      // Com o cache disponível, uma falha na ampliação não interrompe a sessão.
+    }
   }
-  if (availableCount(pool, excluded, moodId) < count) {
-    const more = await searchMany(queries.slice(0, 2), 10, hints).catch(() => [] as SpotifyTrack[]);
-    pool = [...pool, ...more];
-  }
-
-  // Último recurso: músicas reais que a pessoa já escuta/salvou. Não é uma
-  // playlist inventada e não exige requisições novas (getTaste já as buscou).
-  if (availableCount(pool, excluded, moodId) < count) {
-    pool = [...pool, ...shuffle(taste.tracks)];
-  }
+  // A base de favoritos já entra no catálogo; nenhuma chamada extra aqui.
+  const searchError: unknown = null;
   const seenIds = new Set<string>();
   const seenNames = new Set<string>();
   const candidates = pool.filter((track) => {

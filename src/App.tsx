@@ -362,6 +362,22 @@ export default function App() {
         updateHistorySongs(historyId, filteredSongs);
         setHistory(getHistory());
       }
+    } catch (error) {
+      // Não apaga as recomendações atuais se o catálogo já estiver esgotado
+      // ou a API estiver temporariamente limitando novas buscas.
+      if (generation === generationRef.current) {
+        const current = resultRef.current;
+        if (current) {
+          const updated = {
+            ...current,
+            notice: error instanceof Error && error.message
+              ? error.message
+              : "Não encontramos outras músicas agora. Tente novamente mais tarde.",
+          };
+          resultRef.current = updated;
+          setResult(updated);
+        }
+      }
     } finally {
       setMoreLoading(false);
     }
