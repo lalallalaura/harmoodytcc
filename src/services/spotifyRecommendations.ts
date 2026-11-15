@@ -336,7 +336,7 @@ export async function recommendSongsFromSpotify(
     let index = weights.length - 1;
     for (let i = 0; i < weights.length; i++) {
       draw -= weights[i];
-      if (draw <= 0) { index = i; break; }
+      if (draw <= 0) { index =  ; break; }
     }
     const [chosen] = remaining.splice(index, 1);
     selected.push(chosen);
