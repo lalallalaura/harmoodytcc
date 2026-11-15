@@ -27,7 +27,6 @@ const MAX_RECENT = 100;
 const RECENT_PER_MOOD = 48;
 const RESULTS_PER_QUERY = 10;
 const DEFAULT_COUNT = 12;
-const MAX_ARTIST = 2;
 const MIN_DISCOVERY_SCORE = 0.58;
 
 function clamp(n: number, low = 0, high = 1) { return Math.max(low, Math.min(high, n)); }
@@ -211,38 +210,33 @@ export async function recommendSongsFromSpotify(
   if (!eligible.length) {
     throw new SpotifyApiError("no-tracks", "Não encontramos músicas com compatibilidade suficiente para esse clima agora.");
   }
-  const ranked = eligible
-  .map((item) => ({
-    ...item,
-    rank:
-      item.score +
-      Math.random() * 0.015 -
-      (item.recent ? 0.025 : 0),
-  }))
-  .sort((a, b) => b.rank - a.rank);
-  const selected: typeof ranked = [];
-  const selectedIds = new Set<string>();
+  // Sorteio ponderado: afinidade continua sendo a base, mas cada escolha
+  // diminui gradualmente a prioridade dos artistas já presentes na seleção.
+  // Não existe limite fixo por artista.
+  const selected: typeof eligible = [];
+  const remaining = [...eligible];
   const artistCounts = new Map<string, number>();
-  const familiarLimit = count;
-  let familiarCount = 0;
-  function pick(item: (typeof ranked)[number], allowRecent: boolean, allowExtraArtist: boolean, allowExtraFamiliar: boolean) {
-    if (selectedIds.has(item.song.id) || (!allowRecent && item.recent)) return false;
-    if (!allowExtraArtist && (artistCounts.get(item.artist) ?? 0) >= MAX_ARTIST) return false;
-    if (!allowExtraFamiliar && item.familiar && familiarCount >= familiarLimit) return false;
-    selected.push(item);
-    selectedIds.add(item.song.id);
-    artistCounts.set(item.artist, (artistCounts.get(item.artist) ?? 0) + 1);
-    if (item.familiar) familiarCount++;
-    return true;
+  const TEMPERATURE = 0.11;
+
+  while (selected.length < count && remaining.length > 0) {
+    const weights = remaining.map((item) => {
+      const repeats = artistCounts.get(item.artist) ?? 0;
+      const diversityPenalty = 0.095 * Math.log2(1 + repeats * 2);
+      const recentPenalty = item.recent ? 0.045 : 0;
+      const adjusted = item.score - diversityPenalty - recentPenalty;
+      return Math.exp((adjusted - 1) / TEMPERATURE);
+    });
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    let draw = Math.random() * total;
+    let index = weights.length - 1;
+    for (let i = 0; i < weights.length; i++) {
+      draw -= weights[i];
+      if (draw <= 0) { index = i; break; }
+    }
+    const [chosen] = remaining.splice(index, 1);
+    selected.push(chosen);
+    artistCounts.set(chosen.artist, (artistCounts.get(chosen.artist) ?? 0) + 1);
   }
-  // Passo 1: músicas novas, com diversidade de artistas e espaço para descobertas.
-  for (const item of ranked) { if (selected.length >= count) break; pick(item, false, false, false); }
-  // Passo 2: relaxa apenas a proporção de artistas familiares.
-  for (const item of ranked) { if (selected.length >= count) break; pick(item, false, false, true); }
-  // Passo 3: se não houver candidatas novas suficientes, permite músicas recentes.
-  for (const item of ranked) { if (selected.length >= count) break; pick(item, true, false, true); }
-  // Passo 4: último recurso, mais músicas do mesmo artista.
-  for (const item of ranked) { if (selected.length >= count) break; pick(item, true, true, true); }
 
   remember(moodId, selected.map((item) => item.song.id));
   const average = selected.reduce((sum, item) => sum + item.score, 0) / Math.max(selected.length, 1);
