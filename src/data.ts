@@ -10,7 +10,7 @@ export const moods: Mood[] = [
   },
   {
     id: "calm",
-    label: "Calmo",
+    label: "Zen",
     description: "Quero desacelerar e respirar",
     energy: 0.28,
     valence: 0.55,
