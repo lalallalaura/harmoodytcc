@@ -3534,3 +3534,97 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
     align-items: flex-start;
   }
 }
+
+/* =========================================
+   HARMOODY — MINI PLAYER
+========================================= */
+
+.harmoody-mini-player {
+  position: fixed;
+  bottom: 85px;
+  right: 20px;
+  width: min(380px, calc(100vw - 40px));
+  padding: 16px;
+  background: #28182e;
+  border: 1px solid rgba(197, 169, 232, .3);
+  border-radius: 18px;
+  box-shadow: 0 12px 45px rgba(0, 0, 0, .4);
+  z-index: 1000;
+}
+
+.mini-player-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: #c5a9e8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.mini-player-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: #c5a9e8;
+  cursor: pointer;
+}
+
+.mini-player-song {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mini-player-song img {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.mini-player-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mini-player-info strong {
+  color: #f1e9e8;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-player-info span {
+  color: #b8aaba;
+  font-size: 11px;
+}
+
+.mini-player-song a {
+  color: #c5a9e8;
+}
+
+.harmoody-mini-player iframe {
+  display: block;
+}
+
+/* MOBILE */
+
+@media (max-width: 700px) {
+  .harmoody-mini-player {
+    left: 12px;
+    right: 12px;
+    bottom: 85px;
+    width: auto;
+    padding: 12px;
+  }
+}

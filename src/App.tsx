@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { MiniPlayer } from "./components/MiniPlayer";
 import {
   Sparkles,
   RotateCcw,
@@ -44,7 +45,7 @@ type PlaylistState =
 
 export default function App() {
   const [selectedMood, setSelectedMood] = useState<MoodId | null>(null);
-
+  const [playingSong, setPlayingSong] = useState<Song | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return localStorage.getItem("harmoody_theme") === "light"
       ? "light"
@@ -509,10 +510,10 @@ export default function App() {
                             className="hero-music-card hero-music-enter"
                             key={song.id}
                             onClick={() => {
-                              if (song.spotifyUrl) {
-                                window.open(song.spotifyUrl, "_blank", "noopener,noreferrer");
-                              }
-                            }}
+                             if (song.spotifyUrl) {
+    setPlayingSong(song as Song);
+  }
+}}
                             style={{ cursor: song.spotifyUrl ? "pointer" : "default", animationDelay: `${Math.min(index, 5) * 75}ms` }}
                           >
                             <img
@@ -768,10 +769,11 @@ export default function App() {
                       slot.song ? (
                         <div className="song-transition-item" key={slot.song.id}>
                           <SongCard
-                            song={slot.song}
-                            moodId={currentMood.id}
-                            onDislike={handleDislike}
-                          />
+  song={slot.song}
+  moodId={currentMood.id}
+  onDislike={handleDislike}
+  onPlay={setPlayingSong}
+/>
                         </div>
                       ) : (
                         <div className="song-replacement-placeholder" key={`pending-${slot.pendingId}`} role="status" aria-label="Buscando outra música">
@@ -1186,6 +1188,13 @@ export default function App() {
       </main>
 
       <BottomNav active={activeTab} onChange={setActiveTab} />
+
+      {playingSong && (
+        <MiniPlayer
+          song={playingSong}
+          onClose={() => setPlayingSong(null)}
+        />
+      )}
     </div>
   );
 }

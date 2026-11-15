@@ -10,6 +10,7 @@ import {
 } from "../services/feedback";
 
 interface SongCardProps {
+  onPlay?: (song: Song) => void;
   song: Song;
   moodId: MoodId;
   onDislike?: (song: Song) => void;
@@ -19,16 +20,22 @@ export function SongCard({
   song,
   moodId,
   onDislike,
+  onPlay,
 }: SongCardProps) {
+  
   const [feedback, setFeedback] = useState<FeedbackValue | null>(
     () => getFeedbackForSong(song.id, moodId)
   );
 
   function openInSpotify() {
-    if (song.spotifyUrl) {
-      window.open(song.spotifyUrl, "_blank", "noopener,noreferrer");
-    }
+  if (!song.spotifyUrl) return;
+
+  if (onPlay) {
+    onPlay(song);
+  } else {
+    window.open(song.spotifyUrl, "_blank", "noopener,noreferrer");
   }
+}
 
   function handleFeedback(value: FeedbackValue) {
     const next = feedback === value ? null : value;
