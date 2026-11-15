@@ -439,12 +439,12 @@ export default function App() {
             <section className="home-hero">
               <div className="hero-topline">
                 <span className="hero-index">
-                  01 / YOUR FEELING STUDIO
+                  01 / Welcome
                 </span>
 
                 <span className="hero-status">
                   <span className="status-dot" />
-                  FEITO PARA VOCÊ
+                  Harmoody Studio
                 </span>
               </div>
 
