@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sparkles,
   RotateCcw,
@@ -24,7 +23,7 @@ import {
   RecommendationResult,
 } from "./services/recommendations";
 import { createPlaylistFromRecommendations } from "./services/spotifyPlaylist";
-import { MoodId } from "./types";
+import { MoodId, Song } from "./types";
 import {
   getHistory,
   saveHistory,
@@ -61,6 +60,14 @@ export default function App() {
   const [moreLoading, setMoreLoading] = useState(false);
   const [shownIds, setShownIds] = useState<string[]>([]);
   const [playlistSize, setPlaylistSize] = useState(12);
+  const replacingIds = useRef(new Set<string>());
+  const shownIdsRef = useRef<string[]>([]);
+  const resultRef = useRef<RecommendationResult | null>(null);
+  const currentHistoryIdRef = useRef<string | null>(null);
+  const moodRef = useRef<MoodId | null>(null);
+  const generationRef = useRef(0);
+
+  moodRef.current = selectedMood;
 
   const [playlistState, setPlaylistState] = useState<PlaylistState>({
     status: "idle",
@@ -71,45 +78,46 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    const generation = ++generationRef.current;
+    replacingIds.current.clear();
+    shownIdsRef.current = [];
+    resultRef.current = null;
+    currentHistoryIdRef.current = null;
+    setShownIds([]);
+    setResult(null);
+    setCurrentHistoryId(null);
+
     if (!selectedMood) {
-      setResult(null);
-      setCurrentHistoryId(null);
+      setLoading(false);
       return;
     }
 
-    let cancelled = false;
-
     setLoading(true);
     setPlaylistState({ status: "idle" });
-    setShownIds([]);
     setPlaylistSize(12);
-    setCurrentHistoryId(null);
 
     recommendSongs(selectedMood)
       .then((data) => {
-        if (cancelled) return;
+        if (generation !== generationRef.current) return;
 
+        resultRef.current = data;
         setResult(data);
         setLoading(false);
 
-        if (data.source === "spotify") {
-          setShownIds(data.songs.map((song) => song.id));
-        }
+        const ids = data.songs.map((song) => song.id);
+        shownIdsRef.current = ids;
+        setShownIds(ids);
 
         const newHistoryItem = saveHistory(selectedMood, data.songs);
-
+        currentHistoryIdRef.current = newHistoryItem.id;
         setCurrentHistoryId(newHistoryItem.id);
         setHistory(getHistory());
       })
       .catch(() => {
-        if (!cancelled) {
+        if (generation === generationRef.current) {
           setLoading(false);
         }
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [selectedMood]);
 
   const currentMood = moods.find((mood) => mood.id === selectedMood);
@@ -157,29 +165,124 @@ export default function App() {
     setHistoryNote("");
   }
 
-  async function handleShowMore() {
-    if (!selectedMood || moreLoading) return;
+  async function handleDislike(song: Song) {
+    const moodId = moodRef.current;
+    const current = resultRef.current;
 
+    if (
+      !moodId ||
+      !current ||
+      replacingIds.current.has(song.id) ||
+      !current.songs.some((item) => item.id === song.id)
+    ) {
+      return;
+    }
+
+    replacingIds.current.add(song.id);
+    const generation = generationRef.current;
+    const historyId = currentHistoryIdRef.current;
+    const position = current.songs.findIndex((item) => item.id === song.id);
+    const remaining = current.songs.filter((item) => item.id !== song.id);
+    const nextResult = { ...current, songs: remaining };
+
+    resultRef.current = nextResult;
+    setResult(nextResult);
+    setPlaylistState({ status: "idle" });
+
+    const excludedIds = [
+      ...new Set([
+        ...shownIdsRef.current,
+        ...current.songs.map((item) => item.id),
+      ]),
+    ];
+
+    shownIdsRef.current = excludedIds;
+    setShownIds(excludedIds);
+
+    if (historyId) {
+      updateHistorySongs(historyId, remaining);
+      setHistory(getHistory());
+    }
+
+    try {
+      const replacement = await recommendSongs(moodId, {
+        excludeIds: excludedIds,
+        count: 1,
+      });
+
+      if (generation !== generationRef.current) return;
+
+      const latest = resultRef.current;
+      if (!latest) return;
+
+      const existingIds = new Set(latest.songs.map((item) => item.id));
+      const newSong = replacement.songs.find(
+        (item) => !existingIds.has(item.id) && item.id !== song.id
+      );
+
+      if (!newSong) return;
+
+      const updated = [...latest.songs];
+      updated.splice(Math.min(position, updated.length), 0, newSong);
+
+      const updatedResult = { ...latest, songs: updated };
+      resultRef.current = updatedResult;
+      setResult(updatedResult);
+
+      const ids = [...new Set([...shownIdsRef.current, newSong.id])];
+      shownIdsRef.current = ids;
+      setShownIds(ids);
+
+      if (historyId && currentHistoryIdRef.current === historyId) {
+        updateHistorySongs(historyId, updated);
+        setHistory(getHistory());
+      }
+    } catch {
+      return;
+    } finally {
+      replacingIds.current.delete(song.id);
+    }
+  }
+
+  async function handleShowMore() {
+    const moodId = moodRef.current;
+    if (!moodId || moreLoading) return;
+
+    const generation = generationRef.current;
     setMoreLoading(true);
 
     try {
-      const data = await recommendSongs(selectedMood, {
-        excludeIds: shownIds,
+      const data = await recommendSongs(moodId, {
+        excludeIds: shownIdsRef.current,
       });
 
-      setResult(data);
+      if (generation !== generationRef.current) return;
+
+      const dislikedIds = new Set(
+        [...replacingIds.current]
+      );
+      const filteredSongs = data.songs.filter(
+        (song) => !dislikedIds.has(song.id)
+      );
+      const updatedData = { ...data, songs: filteredSongs };
+
+      resultRef.current = updatedData;
+      setResult(updatedData);
       setPlaylistState({ status: "idle" });
 
-      if (data.source === "spotify") {
-        setShownIds((previous) => [
-          ...previous,
-          ...data.songs.map((song) => song.id),
-        ]);
+      const ids = [
+        ...new Set([
+          ...shownIdsRef.current,
+          ...filteredSongs.map((song) => song.id),
+        ]),
+      ];
+      shownIdsRef.current = ids;
+      setShownIds(ids);
 
-        if (currentHistoryId) {
-          updateHistorySongs(currentHistoryId, data.songs);
-          setHistory(getHistory());
-        }
+      const historyId = currentHistoryIdRef.current;
+      if (historyId) {
+        updateHistorySongs(historyId, filteredSongs);
+        setHistory(getHistory());
       }
     } finally {
       setMoreLoading(false);
@@ -576,6 +679,7 @@ export default function App() {
                       key={song.id}
                       song={song}
                       moodId={currentMood.id}
+                      onDislike={handleDislike}
                     />
                   ))}
 

@@ -9,7 +9,17 @@ import {
   saveFeedback,
 } from "../services/feedback";
 
-export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
+interface SongCardProps {
+  song: Song;
+  moodId: MoodId;
+  onDislike?: (song: Song) => void;
+}
+
+export function SongCard({
+  song,
+  moodId,
+  onDislike,
+}: SongCardProps) {
   const [feedback, setFeedback] = useState<FeedbackValue | null>(
     () => getFeedbackForSong(song.id, moodId)
   );
@@ -27,6 +37,10 @@ export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
 
     if (next) {
       saveFeedback(song, moodId, next, song.genres);
+
+      if (next === "dislike") {
+        onDislike?.(song);
+      }
     } else {
       removeFeedback(song.id, moodId);
     }
@@ -41,7 +55,10 @@ export function SongCard({ song, moodId }: { song: Song; moodId: MoodId }) {
         <span>{song.artist}</span>
 
         <div className="song-meta">
-          <span>{song.estimated ? "~" : ""}{song.bpm} BPM</span>
+          <span>
+            {song.estimated ? "~" : ""}
+            {song.bpm} BPM
+          </span>
           <span>Valência {Math.round(song.valence * 100)}%</span>
         </div>
       </div>
