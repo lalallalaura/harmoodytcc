@@ -3628,4 +3628,7 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
     padding: 12px;
   }
 }
-/* teste de alteração do CSS */
+
+body:has(.app-shell[data-theme="dark"]) {
+  background: #130d19;
+}
