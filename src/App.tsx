@@ -62,6 +62,7 @@ export default function App() {
   const [shownIds, setShownIds] = useState<string[]>([]);
   const [playlistSize, setPlaylistSize] = useState(12);
   const [heroTracks, setHeroTracks] = useState<SpotifyTrack[]>([]);
+  const [pendingReplacements, setPendingReplacements] = useState<Array<{ id: string; position: number }>>([]);
   const replacingIds = useRef(new Set<string>());
   const shownIdsRef = useRef<string[]>([]);
   const resultRef = useRef<RecommendationResult | null>(null);
@@ -96,6 +97,7 @@ export default function App() {
   useEffect(() => {
     const generation = ++generationRef.current;
     replacingIds.current.clear();
+    setPendingReplacements([]);
     shownIdsRef.current = [];
     resultRef.current = null;
     currentHistoryIdRef.current = null;
@@ -200,6 +202,7 @@ export default function App() {
     const position = current.songs.findIndex((item) => item.id === song.id);
     const remaining = current.songs.filter((item) => item.id !== song.id);
     const nextResult = { ...current, songs: remaining };
+    setPendingReplacements((items) => [...items, { id: song.id, position }]);
 
     resultRef.current = nextResult;
     setResult(nextResult);
@@ -257,6 +260,7 @@ export default function App() {
       return;
     } finally {
       replacingIds.current.delete(song.id);
+      setPendingReplacements((items) => items.filter((item) => item.id !== song.id));
     }
   }
 
@@ -444,14 +448,14 @@ export default function App() {
                         .slice(0, 6)
                         .map((song, index) => (
                           <article
-                            className="hero-music-card"
+                            className="hero-music-card hero-music-enter"
                             key={song.id}
                             onClick={() => {
                               if (song.spotifyUrl) {
                                 window.open(song.spotifyUrl, "_blank", "noopener,noreferrer");
                               }
                             }}
-                            style={{ cursor: song.spotifyUrl ? "pointer" : "default" }}
+                            style={{ cursor: song.spotifyUrl ? "pointer" : "default", animationDelay: `${Math.min(index, 5) * 75}ms` }}
                           >
                             <img
                               src={song.cover}
@@ -694,14 +698,35 @@ export default function App() {
                     </span>
                   </div>
 
-                  {result.songs.map((song) => (
-                    <SongCard
-                      key={song.id}
-                      song={song}
-                      moodId={currentMood.id}
-                      onDislike={handleDislike}
-                    />
-                  ))}
+                  {(() => {
+                    const slots: Array<{ song?: Song; pendingId?: string }> =
+                      result.songs.map((song) => ({ song }));
+                    [...pendingReplacements]
+                      .sort((a, b) => a.position - b.position)
+                      .forEach(({ id, position }) => {
+                        slots.splice(Math.min(position, slots.length), 0, { pendingId: id });
+                      });
+                    return slots.map((slot) =>
+                      slot.song ? (
+                        <div className="song-transition-item" key={slot.song.id}>
+                          <SongCard
+                            song={slot.song}
+                            moodId={currentMood.id}
+                            onDislike={handleDislike}
+                          />
+                        </div>
+                      ) : (
+                        <div className="song-replacement-placeholder" key={`pending-${slot.pendingId}`} role="status" aria-label="Buscando outra música">
+                          <div className="song-replacement-cover" />
+                          <div className="song-replacement-copy">
+                            <span />
+                            <span />
+                          </div>
+                          <Loader2 size={18} className="spin" />
+                        </div>
+                      )
+                    );
+                  })()}
 
                   {result.source === "spotify" && (
                     <button
