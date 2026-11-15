@@ -88,7 +88,7 @@ async function getTaste(moodId: MoodId): Promise<Taste> {
   const feedback = getFeedback().filter((item) => item.mood === moodId);
   feedback.filter((item) => item.value === "like").forEach((item) => artists.add(norm(item.artist)));
   const counts = new Map<string, number>();
-  const genresByArtist = await fetchArtistsGenres([...artistIds].slice(0, 25)).catch(() => ({} as Record<string, string[]>));
+  const genresByArtist = await fetchArtistsGenres([...artistIds].slice(0, 6)).catch(() => ({} as Record<string, string[]>));
   Object.values(genresByArtist).forEach((genres) => genres.forEach((genre) => {
     const key = norm(genre);
     counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -103,11 +103,11 @@ async function getTaste(moodId: MoodId): Promise<Taste> {
 }
 
 function queriesFor(moodId: MoodId, taste: Taste): string[] {
-  const moodGenres = shuffle(MOOD_GENRES[moodId]).slice(0, 5).map((genre) => `genre:"${genre}"`);
+  const moodGenres = shuffle(MOOD_GENRES[moodId]).slice(0, 3).map((genre) => `genre:"${genre}"`);
   const personalGenres = [...taste.genres]
     .filter(([, weight]) => weight > 0)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, 1)
     .map(([genre]) => `genre:"${genre.replace(/"/g, "")}"`);
   // Apenas uma busca por artista: não deixa os favoritos dominarem os candidatos.
   const artist = shuffle([...taste.artists]).slice(0, 1).map((name) => `artist:"${name.replace(/"/g, "")}"`);
@@ -148,16 +148,17 @@ export async function recommendSongsFromSpotify(
   const recent = new Set(recentFor(moodId));
   const taste = await getTaste(moodId).catch((): Taste => ({ artists: new Set(), artistIds: new Set(), genres: new Map(), hasSignal: false }));
   const queries = queriesFor(moodId, taste);
-  const offset = Math.floor(Math.random() * 4) * 10;
+  const offset = Math.floor(Math.random() * 3) * 10;
   const first = await searchMany(queries, offset);
   let pool = first;
-  if (pool.length < count * 3) {
-    const more = await searchMany(queries, offset === 0 ? 10 : 0).catch(() => [] as SpotifyTrack[]);
+  // Só amplia a pesquisa quando o primeiro lote é realmente insuficiente.
+  if (pool.length < count + 5) {
+    const more = await searchMany(queries.slice(0, 2), offset === 0 ? 10 : 0).catch(() => [] as SpotifyTrack[]);
     pool = [...pool, ...more];
   }
   // Busca aberta somente como último recurso; os resultados ainda passam pelo ranking.
   if (pool.length < count) {
-    const fallback = await searchMany(shuffle(MOOD_GENRES[moodId]).slice(0, 3), 0).catch(() => [] as SpotifyTrack[]);
+    const fallback = await searchMany(shuffle(MOOD_GENRES[moodId]).slice(0, 2).map((genre) => `genre:"${genre}"`), 0).catch(() => [] as SpotifyTrack[]);
     pool = [...pool, ...fallback];
   }
   const seenIds = new Set<string>();
@@ -171,7 +172,8 @@ export async function recommendSongsFromSpotify(
   });
   if (!candidates.length) throw new SpotifyApiError("no-tracks", "Não encontramos músicas novas para esse clima agora.");
 
-  const artistIds = [...new Set(candidates.flatMap((track) => track.artistIds))];
+  // Prioriza artistas distintos para obter mais variedade de perfis no cache.
+  const artistIds = [...new Set(candidates.map((track) => track.artistIds[0]).filter((id): id is string => Boolean(id)))].slice(0, 6);
   const genresByArtist = await fetchArtistsGenres(artistIds).catch(() => ({} as Record<string, string[]>));
   const scored = candidates.map((track) => {
     const genres = [...new Set(track.artistIds.flatMap((id) => genresByArtist[id] ?? []))];
