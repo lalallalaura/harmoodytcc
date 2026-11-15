@@ -1,3 +1,4 @@
+
 import { moods, songs } from "../data";
 import { MoodId, Song } from "../types";
 import { isSpotifyConnected } from "./spotifyAuth";
@@ -7,6 +8,10 @@ import {
   getFeedback,
   getFeedbackForSong,
 } from "./feedback";
+import {
+  getRecentlyRecommendedIds,
+  saveRecommendedSongs,
+} from "./recommendationHistory";
 
 function distance(a: number, b: number) {
   return Math.abs(a - b);
@@ -46,13 +51,8 @@ function recommendFromLocalData(
     )
     .map((song) => {
       const moodBonus = song.moods.includes(moodId) ? 0.35 : 0;
-
-      const energyFit =
-        1 - distance(song.energy, mood.energy);
-
-      const valenceFit =
-        1 - distance(song.valence, mood.valence);
-
+      const energyFit = 1 - distance(song.energy, mood.energy);
+      const valenceFit = 1 - distance(song.valence, mood.valence);
       const bpmFit =
         1 - Math.min(distance(song.bpm, bpmTarget) / 100, 1);
 
@@ -126,35 +126,77 @@ export async function recommendSongs(
   moodId: MoodId,
   options?: { excludeIds?: string[]; count?: number }
 ): Promise<RecommendationResult> {
-  if (!isSpotifyConnected()) {
-    return {
-      ...recommendFromLocalData(moodId, options),
-      source: "local",
-      notice:
-        "Conecte seu Spotify no Perfil para receber recomendações com músicas reais!",
-    };
+  const recentIds = getRecentlyRecommendedIds(moodId);
+
+  const excludedIds = [
+    ...new Set([
+      ...(options?.excludeIds ?? []),
+      ...recentIds,
+    ]),
+  ];
+
+  const updatedOptions = {
+    ...options,
+    excludeIds: excludedIds,
+  };
+
+  async function generate(
+    recommendationOptions: typeof updatedOptions
+  ): Promise<RecommendationResult> {
+    if (!isSpotifyConnected()) {
+      return {
+        ...recommendFromLocalData(
+          moodId,
+          recommendationOptions
+        ),
+        source: "local",
+        notice:
+          "Conecte seu Spotify no Perfil para receber recomendações com músicas reais!",
+      };
+    }
+
+    try {
+      const result = await recommendSongsFromSpotify(
+        moodId,
+        recommendationOptions
+      );
+
+      return {
+        ...result,
+        source: "spotify",
+      };
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Não conseguimos buscar músicas no Spotify agora. Mostrando sugestões locais.";
+
+      return {
+        ...recommendFromLocalData(
+          moodId,
+          recommendationOptions
+        ),
+        source: "local",
+        notice: message,
+      };
+    }
   }
 
-  try {
-    const result = await recommendSongsFromSpotify(
-      moodId,
-      options
-    );
+  let result = await generate(updatedOptions);
 
-    return {
-      ...result,
-      source: "spotify",
-    };
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : "Não conseguimos buscar músicas no Spotify agora. Mostrando sugestões locais.";
-
-    return {
-      ...recommendFromLocalData(moodId, options),
-      source: "local",
-      notice: message,
-    };
+  if (
+    result.songs.length === 0 &&
+    recentIds.length > 0
+  ) {
+    result = await generate({
+      ...options,
+      excludeIds: options?.excludeIds ?? [],
+    });
   }
+
+  if (result.songs.length > 0) {
+    saveRecommendedSongs(moodId, result.songs);
+  }
+
+  return result;
 }
