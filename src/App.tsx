@@ -10,6 +10,7 @@ import {
   Disc3,
   Sun,
   Moon,
+  Play,
 } from "lucide-react";
 
 import { MoodSelector } from "./components/MoodSelector";
@@ -55,6 +56,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [historyNote, setHistoryNote] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>(getHistory());
+  const [replayMonth, setReplayMonth] = useState(() => new Date().getMonth());
+  const [replayYear, setReplayYear] = useState(() => new Date().getFullYear());
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendationResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -137,6 +140,32 @@ export default function App() {
         }
       });
   }, [selectedMood]);
+
+  const replaySessions = history.filter((item) => {
+    const date = new Date(item.createdAt);
+    return date.getMonth() === replayMonth && date.getFullYear() === replayYear;
+  });
+  const replaySongs = replaySessions.flatMap((item) => item.songs ?? []);
+  const replayArtists = Object.values(replaySongs.reduce<Record<string, { name: string; count: number; cover: string }>>((acc, song) => {
+    const name = song.artist || "Artista desconhecido";
+    const key = name.toLocaleLowerCase("pt-BR");
+    if (!acc[key]) acc[key] = { name, count: 0, cover: song.cover };
+    acc[key].count += 1;
+    if (!acc[key].cover && song.cover) acc[key].cover = song.cover;
+    return acc;
+  }, {})).sort((a, b) => b.count - a.count).slice(0, 5);
+  const replayTopSongs = Object.values(replaySongs.reduce<Record<string, { song: Song; count: number }>>((acc, song) => {
+    const key = song.id;
+    if (!acc[key]) acc[key] = { song, count: 0 };
+    acc[key].count += 1;
+    return acc;
+  }, {})).sort((a, b) => b.count - a.count).slice(0, 8);
+  const replayMoods = moods.map((mood) => ({
+    ...mood,
+    count: replaySessions.filter((item) => item.mood === mood.id).length,
+  })).sort((a, b) => b.count - a.count);
+  const replayMonths = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+  const replayMonthName = new Date(replayYear, replayMonth, 1).toLocaleDateString("pt-BR", { month: "long" });
 
   const currentMood = moods.find((mood) => mood.id === selectedMood);
 
@@ -781,28 +810,6 @@ export default function App() {
 
         {activeTab === "history" && (
           <section className="history-page">
-            <header className="history-intro">
-              <div className="history-heading">
-                <span className="eyebrow">
-                  HARMOODY / SEU ARQUIVO PESSOAL
-                </span>
-
-                <h1>
-                  Fragmentos <em>de você.</em>
-                </h1>
-
-                <p>
-                  Cada escolha guarda um pouco do que você sentiu
-                  e daquilo que quis encontrar na música.
-                </p>
-              </div>
-
-              <div className="history-total">
-                <strong>{String(history.length).padStart(2, "0")}</strong>
-                <span>REGISTROS</span>
-              </div>
-            </header>
-
             {selectedHistoryItem ? (
               <div className="history-detail">
                 <button
@@ -936,80 +943,93 @@ export default function App() {
                   );
                 })()}
               </div>
-            ) : history.length === 0 ? (
-              <div className="history-empty">
-                <span className="history-empty-mark">H.</span>
-                <span className="eyebrow">PÁGINA EM BRANCO</span>
-                <h3>Sua história começa aqui.</h3>
-                <p>
-                  Escolha um clima na página inicial.
-                  Seus registros aparecerão neste espaço.
-                </p>
-              </div>
             ) : (
               <>
-                <div className="history-archive-label">
-                  <span>01 / MEMÓRIAS MUSICAIS</span>
-                  <span>REGISTROS RECENTES</span>
+                <header className="replay-heading">
+                  <div>
+                    <span className="eyebrow">HARMOODY / SEU UNIVERSO MUSICAL</span>
+                    <h1>Seu <em>Replay.</em></h1>
+                    <p>As músicas que fizeram parte dos seus momentos.</p>
+                  </div>
+                  <select aria-label="Ano do Replay" value={replayYear} onChange={(event) => setReplayYear(Number(event.target.value))}>
+                    {[...new Set([new Date().getFullYear(), ...history.map((item) => new Date(item.createdAt).getFullYear())])].sort((a, b) => b - a).map((year) => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </header>
+                <div className="replay-months" aria-label="Selecionar mês">
+                  {replayMonths.map((month, index) => (
+                    <button type="button" key={month} className={replayMonth === index ? "active" : ""} onClick={() => setReplayMonth(index)}>{month}</button>
+                  ))}
                 </div>
-
-                <div className="history-mosaic">
-                  {history.map((item, index) => {
-                    const mood = moods.find((m) => m.id === item.mood);
-
-                    if (!mood) return null;
-
-                    const date = new Date(item.createdAt);
-
-                    return (
-                      <button
-                        key={item.id}
-                        className={`history-card history-card-${index % 4}`}
-                        onClick={() => openHistoryItem(item)}
-                      >
-                        <div className="history-card-top">
-                          <span>
-                            NO. {String(index + 1).padStart(2, "0")}
-                          </span>
-
-                          <span>
-                            {date.toLocaleDateString("pt-BR", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </span>
+                <div className="replay-banner">
+                  <span>SEU RESUMO DE {replayMonthName.toLocaleUpperCase("pt-BR")}</span>
+                  <h2>{replaySessions.length} {replaySessions.length === 1 ? "sessão musical" : "sessões musicais"}.</h2>
+                  <p>{replaySongs.length} músicas recomendadas para os seus momentos.</p>
+                </div>
+                {replaySessions.length === 0 ? (
+                  <div className="replay-empty"><Disc3 size={28}/><h3>Nenhuma sessão neste mês.</h3><p>Escolha um mood na página inicial para começar sua coleção musical.</p></div>
+                ) : (
+                  <>
+                    <section className="replay-section">
+                      <h2>Seus artistas em destaque</h2>
+                      {replayArtists.length ? (
+                        <div className="replay-artist-track">
+                          {replayArtists.map((artist, index) => (
+                            <article className="replay-artist-card" key={artist.name}>
+                              {artist.cover ? <img src={artist.cover} alt={`Capa de música de ${artist.name}`} loading="lazy"/> : <div className="replay-art-fallback"><Disc3 size={36}/></div>}
+                              <strong className="replay-rank">{index + 1}</strong>
+                              <div className="replay-artist-caption"><strong>{artist.name}</strong><span>{artist.count} {artist.count === 1 ? "recomendação" : "recomendações"}</span></div>
+                            </article>
+                          ))}
                         </div>
-
-                        <div className="history-card-art">
-                          <span>{mood.emoji}</span>
-                          <div className="history-card-orbit" />
-                        </div>
-
-                        <div className="history-card-bottom">
-                          <div>
-                            <span className="history-card-caption">
-                              CLIMA ESCOLHIDO
-                            </span>
-
-                            <strong>{mood.label}</strong>
+                      ) : <p className="replay-muted">Os registros deste mês não possuem músicas salvas.</p>}
+                    </section>
+                    <section className="replay-section">
+                      <h2>Suas músicas em destaque</h2>
+                      <div className="replay-song-list">
+                        {replayTopSongs.map(({ song, count }, index) => (
+                          <div className="replay-song-row" key={song.id}>
+                            <span className="replay-song-rank">{index + 1}</span>
+                            {song.cover ? <img src={song.cover} alt={`Capa de ${song.title}`} loading="lazy"/> : <div className="replay-song-fallback"><Disc3 size={20}/></div>}
+                            <div className="replay-song-text"><strong>{song.title}</strong><span>{song.artist} · {count} {count === 1 ? "recomendação" : "recomendações"}</span></div>
+                            {song.spotifyUrl && <a href={song.spotifyUrl} target="_blank" rel="noopener noreferrer" aria-label={`Ouvir ${song.title} no Spotify`}><Play size={17}/></a>}
                           </div>
-
-                          <span className="history-card-time">
-                            {date.toLocaleTimeString("pt-BR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-
-                        <span className="history-card-open">
-                          ABRIR REGISTRO!
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                        ))}
+                        {!replayTopSongs.length && <p className="replay-muted">Ainda não há músicas registradas.</p>}
+                      </div>
+                    </section>
+                    <section className="replay-section">
+                      <h2>Seus moods favoritos</h2>
+                      <div className="replay-mood-list">
+                        {replayMoods.filter((mood) => mood.count > 0).map((mood) => (
+                          <div className="replay-mood-row" key={mood.id}>
+                            <div><strong>{mood.label}</strong><span>{mood.count} {mood.count === 1 ? "sessão" : "sessões"}</span></div>
+                            <div className="replay-mood-bar"><span style={{ width: `${(mood.count / replaySessions.length) * 100}%` }}/></div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                    <section className="replay-section">
+                      <h2>Suas sessões</h2>
+                      <div className="replay-sessions">
+                        {replaySessions.map((item) => {
+                          const mood = moods.find((m) => m.id === item.mood);
+                          const date = new Date(item.createdAt);
+                          return (
+                            <button type="button" className="replay-session" key={item.id} onClick={() => openHistoryItem(item)}>
+                              <div className="replay-session-cover">
+                                {item.songs?.find((song) => song.cover)?.cover ? <img src={item.songs.find((song) => song.cover)!.cover} alt="Capa de música da sessão" loading="lazy"/> : <Disc3 size={26}/>}
+                              </div>
+                              <div className="replay-session-info"><strong>{mood?.label ?? item.mood}</strong><span>{date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · {item.songs?.length ?? 0} músicas</span></div>
+                              <span className="replay-session-arrow">›</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  </>
+                )}
               </>
             )}
           </section>
