@@ -3630,5 +3630,11 @@ body:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }
 }
 
 body:has(.app-shell[data-theme="dark"]) {
-  background: #130d19;
+  background: linear-gradient(
+    135deg,
+    #241b40 0%,
+    #352650 55%,
+    #30234f 100%
+  );
+  background-attachment: fixed;
 }
