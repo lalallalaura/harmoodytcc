@@ -584,10 +584,7 @@ export async function recommendSongsFromSpotify(
     ]),
   ];
 
-  const baseOffset =
-    excludeIds.size > 0
-      ? Math.floor(Math.random() * 30)
-      : 0;
+    const baseOffset = Math.floor(Math.random() * 30);
 
   const extraOffsets =
     targetCount <= 12
@@ -760,10 +757,16 @@ export async function recommendSongsFromSpotify(
     };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+const variedScored = scored.map((item) => ({
+  ...item,
+  variedScore: item.score + Math.random() * 0.08,
+}));
 
+variedScored.sort(
+  (a, b) => b.variedScore - a.variedScore
+);
   /* ========================================
-     SELEÇÃO FINAL E DIVERSIDADE
+     DIVERSIDADE
   ======================================== */
 
   const maxPerArtist = Math.max(
