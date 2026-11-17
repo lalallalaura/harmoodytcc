@@ -336,8 +336,7 @@ export async function recommendSongsFromSpotify(
     let index = weights.length - 1;
     for (let i = 0; i < weights.length; i++) {
       draw -= weights[i];
-      if (draw <= 0) { index =  ; break; }
-    }
+if (draw <= 0) { index = i; break; }    }
     const [chosen] = remaining.splice(index, 1);
     selected.push(chosen);
     artistCounts.set(chosen.artist, (artistCounts.get(chosen.artist) ?? 0) + 1);
