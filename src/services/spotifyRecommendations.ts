@@ -392,7 +392,7 @@ export async function recommendSongsFromSpotify(
     const personalEvidence = familiar || liked || affinity > 0;
     const moodEvidence = (hint?.kind === "genre" || hint?.kind === "term") && fit !== null && fit > 0;
     return { song, score, artist: track.artistIds[0] ?? norm(track.artist),
-      familiar, recent: recent.has(track.id), personalEvidence, moodEvidence, liked };
+      familiar, recent: recent.has(track.id), personalEvidence, moodEvidence, liked, affinity, fit };
   });
 
   // Na PRIMEIRA recomendação, artistas e curtidas do usuário têm prioridade
@@ -436,6 +436,24 @@ export async function recommendSongsFromSpotify(
     remaining.splice(remaining.indexOf(chosen), 1);
     selected.push(chosen);
     artistCounts.set(chosen.artist, (artistCounts.get(chosen.artist) ?? 0) + 1);
+  }
+
+  if (import.meta.env.DEV) {
+    console.group(`[HARMOODY] Diagnóstico — ${moodId}`);
+    console.table(selected.map((item) => {
+      const hint = hints.get(item.song.id);
+      return {
+        musica: item.song.title,
+        artista: item.song.artist,
+        origem: hint?.term ?? "Sem origem registrada",
+        tipoBusca: hint?.kind ?? "Desconhecido",
+        familiar: item.familiar,
+        afinidade: item.affinity,
+        compatibilidade: item.fit,
+        pontuacao: Number(item.score.toFixed(3)),
+      };
+    }));
+    console.groupEnd();
   }
 
   remember(moodId, selected.map((item) => item.song.id));
