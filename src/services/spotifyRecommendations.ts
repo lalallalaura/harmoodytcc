@@ -167,7 +167,8 @@ function queriesFor(moodId: MoodId, taste: Taste): string[] {
     .filter(([, weight]) => weight > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8).map(([name]) => name);
-  const artistQueries = shuffle(favoriteArtists).slice(0, 2)
+  // A primeira busca deve partir do perfil da conta; não de termos aleatórios.
+  const artistQueries = favoriteArtists.slice(0, 3)
     .map((name) => `artist:"${name.replace(/"/g, "")}"`);
   const personalGenre = [...taste.genres]
     .filter(([, value]) => value > 0)
@@ -183,7 +184,11 @@ function queriesFor(moodId: MoodId, taste: Taste): string[] {
   };
   const moodQuery = shuffle(moodSearchGenres[moodId]).slice(0, 1)
     .map((genre) => `genre:"${genre}"`);
-  const discoveryQuery = shuffle(MOOD_SEARCH_TERMS[moodId]).slice(0, 1);
+  // Sem perfil musical, fazemos uma descoberta por mood; com perfil, usamos
+  // mais espaço para procurar músicas dos artistas favoritos.
+  const discoveryQuery = taste.hasSignal
+    ? []
+    : shuffle(MOOD_SEARCH_TERMS[moodId]).slice(0, 2);
   return [...new Set([...artistQueries, ...personalGenre, ...moodQuery, ...discoveryQuery])].slice(0, 4);
 }
 
@@ -390,20 +395,32 @@ export async function recommendSongsFromSpotify(
       familiar, recent: recent.has(track.id), personalEvidence, moodEvidence, liked };
   });
 
-  // Prioriza faixas com evidência de gosto pessoal; só depois inclui descobertas
-  // com algum sinal de mood. Não descarta toda a busca por falta de metadados.
+  // Na PRIMEIRA recomendação, artistas e curtidas do usuário têm prioridade
+  // para que a lista não comece com doze descobertas genéricas. O restante
+  // preserva descoberta, mood e variedade. Sem limite fixo por artista.
   const eligible = scored.filter((item) => item.personalEvidence || item.moodEvidence);
   const remaining = eligible.length ? [...eligible] : [...scored];
   const selected: typeof scored = [];
   const artistCounts = new Map<string, number>();
   const TEMPERATURE = 0.085;
+  const firstSelection = excluded.size === 0;
+  const personalCandidates = remaining.filter((item) => item.personalEvidence).length;
+  const personalTarget = firstSelection && taste.hasSignal
+    ? Math.min(personalCandidates, Math.ceil(count * 0.6))
+    : 0;
 
   while (selected.length < count && remaining.length > 0) {
-    const weights = remaining.map((item) => {
+    const personalChosen = selected.filter((item) => item.personalEvidence).length;
+    // Começamos pelas faixas com algum vínculo real com a conta. Se não há
+    // candidatas suficientes, usamos a descoberta por mood sem travar a lista.
+    const personalPhase = personalChosen < personalTarget;
+    const choices = personalPhase
+      ? remaining.filter((item) => item.personalEvidence)
+      : remaining;
+    const weights = choices.map((item) => {
       const repeats = artistCounts.get(item.artist) ?? 0;
       const diversityPenalty = 0.13 * Math.log2(1 + repeats * 2);
       const recentPenalty = item.recent ? 0.07 : 0;
-      // O ajuste é local: não exige novas chamadas ao Spotify.
       const weakEvidencePenalty = taste.hasSignal && !item.personalEvidence ? 0.075 : 0;
       const adjusted = item.score - diversityPenalty - recentPenalty - weakEvidencePenalty;
       return Math.exp((adjusted - 1) / TEMPERATURE);
@@ -415,7 +432,8 @@ export async function recommendSongsFromSpotify(
       draw -= weights[i];
       if (draw <= 0) { index = i; break; }
     }
-    const [chosen] = remaining.splice(index, 1);
+    const chosen = choices[index];
+    remaining.splice(remaining.indexOf(chosen), 1);
     selected.push(chosen);
     artistCounts.set(chosen.artist, (artistCounts.get(chosen.artist) ?? 0) + 1);
   }
