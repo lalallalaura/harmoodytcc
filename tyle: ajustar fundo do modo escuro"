@@ -1,9 +1,0 @@
-[1mdiff --git a/src/styles.css b/src/styles.css[m
-[1mindex 73b9581..334bdd1 100644[m
-[1m--- a/src/styles.css[m
-[1m+++ b/src/styles.css[m
-[36m@@ -3628,3 +3628,4 @@[m [mbody:has(.app-shell[data-theme="light"]) { background: #f2eaf8; }[m
-     padding: 12px;[m
-   }[m
- }[m
-[32m+[m[32m/* teste de alteração do CSS */[m
